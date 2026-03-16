@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+    xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{common/layouts/default_layout}"
+    layout:fragment="Content">
+<head>
+<link rel="stylesheet"
+    href="https://uicdn.toast.com/grid/laprod/tui-grid.css" />
+<script src="https://uicdn.toast.com/grid/laprod/tui-grid.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.js"
+    integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+    crossorigin="anonymous"></script>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+<style>
+        .search-container {
+        display: flex;
+        justify-content: space-between; 
+        align-items: center; 
+        gap: 10px; 
+    }
+    .input-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 50%;
+    }
+    .input-group select,
+    .input-group input[type="text"] {
+        width: calc(33.33% - 20px);
+    }
+    .button-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    </style>
+</head>
+<body>
+ <div class="container">
+	 <div>
+        <form name="search-form" autocomplete="off" onsubmit="getSearchList()">
+            <h3 style="margin-top: 50px; font-weight: bold; margin-bottom: 20px;">공정 조회</h3>
+
+            <div class="search-container">
+                <div class="input-group">
+                    <select class="form-select order-select" aria-label="Default select example" name="type">
+                        <option selected value="procName">공정명</option>
+                    </select>
+                    <input class="form-control me-2 order-search" type="text" name="keyword">
+                    <input type='button' class="btn btn-outline-primary" value="검색" onclick="getSearchList()">
+                </div>
+                <div class="button-group">
+                    <input type='button' class="btn btn-outline-info" value="저장" id="saveBtn">
+                </div>
+            </div>
+        </form>
+    </div>
+        <h3 style="margin-top: 50px;"></h3>
+        <div id="grid1">
+        </div>
+        <!-- 메인 그리드 -->
+
+        <br>
+	
+        <h3 style="font-weight: bold">검사흐름도 관리</h3>
+		            <div style="text-align: right; margin-bottom: 10px">
+                        <input type='button' class="btn btn-outline-success" value="╆" id="appendBtn"> 
+                        <input type='button' class="btn btn-outline-danger" value="ㅡ" id="delBtn">
+                    </div>
+        <div id="gridTestFlow"></div>
+        
+        
+        
+        
+        
+ </div>
+
+
+
+
+
+    <!-- 자재코드 클릭시 나타나는 모달창 -->
+	<div class="modal fade" id="search-test-Modal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-4 order-search-title"
+						id="exampleModalLabel">검사 기준 조회</h1>
+
+					<div class="order-search-nav">
+						<!-- 검색 조건 설정 -->
+						<div class="form-check form-check-inline">
+							<input class="form-check-input" type="radio"
+								name="flexRadioDefault" id="flexRadioDefault1" value="matName"
+								checked> <label class="form-check-label"
+								for="flexRadioDefault1"> 검사명 </label>
+						</div>
+
+
+						<!-- 검색 입력창 -->
+						<input class="form-control me-2 order-search"
+							id="modal-search-test-input" type="search"
+							placeholder="Search" aria-label="Search">
+						<!-- 검색 버튼 -->
+						<button class="btn btn-outline-success"
+							id="modal-test-search-btn" type="submit">검색</button>
+					</div>
+
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div id="grid-modal-test"></div>
+					<!-- 모달 내의 그리드 -->
+				</div>
+				<div class="modal-footer"></div>
+			</div>
+		</div>
+	</div>
+</body>
+<script th:inline="javascript">
+const token = $("meta[name='_csrf']").attr("content");
+const header = $("meta[name='_csrf_header']").attr("content");
+
+let pList = [];
+let fList = [];
+
+const gridProc = new tui.Grid({
+    el: document.getElementById('grid1'),
+    scrollX: false,
+    scrollY: false,
+    pageOptions: {
+        perPage: 5,
+        useClient: true,
+    },
+    columns: [
+        { header: '공정코드', name: 'procCode', align: 'center' },
+        { header: '공정명', name: 'procName', align: 'center'},
+        { header: '공정구분',name: 'procClassCode',
+            formatter: 'listItemText',
+            editor: {
+                type: 'select',
+                options: {
+                  listItems: pList
+          }
+        }
+        },
+        { header: '설비구분', name: 'facClassCode', formatter: 'listItemText',
+            editor: {
+                type: 'select',
+                options: {
+                   listItems: fList
+          }
+          }
+        },
+    ],
+});
+
+const gridTestFlow = new tui.Grid({
+    el: document.getElementById('gridTestFlow'),
+    scrollX: false,
+    scrollY: false,
+    rowHeaders: [{ type: 'rowNum' }, { type: 'checkbox' }],
+    pageOptions: {
+        perPage: 5,
+        useClient: true,
+    },
+    columns: [
+        { header: '순서', name: 'testNum', align: 'center', editor: 'text' },
+        { header: '검사흐름도', name: 'testFlowCode', align: 'center' , hidden: true},
+        { header: '검사코드', name: 'testCode', align: 'center' },
+        { header: '통과기준', name: 'passCriteria', align: 'center', editor: 'text' },
+        { header: '공정코드', name: 'procCode', align: 'center', hidden: false },
+        { header: '공정명', name: 'procName', align: 'center', hidden: false }
+    ],
+});
+
+ShowProc();
+
+function ShowProc() {
+    $.ajax({
+        url: '/test/testFlowProc',
+        method: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function (result) {
+            console.log(result);
+            gridProc.resetData(result);
+            gridProc.refreshLayout();
+        }
+    })
+}
+
+gridProc.on("click", (e) => {
+    if (e.columnName === 'procCode' || e.columnName === 'procName') {
+        let rowData = gridProc.getRow(e.rowKey);
+        let procCode = rowData.procCode;
+        let procName = rowData.procName;
+
+        $.ajax({
+            url: '/test/testFlowList',
+            method: 'GET',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+            data: {
+                procCode: procCode
+            },
+            success: function (data) {
+                console.log("받아온 데이터: ", data);
+                // 공정코드와 공정명을 data에 추가하여 gridTestFlow에 설정
+                data = data.map(item => ({ ...item, procCode, procName }));
+                gridTestFlow.resetData(data);
+                gridTestFlow.refreshLayout();
+            },
+            error: function (error) {
+                toastr.error('에러 : ' + error);
+            }
+        });
+    }
+});
+
+const saveBtn = document.getElementById('saveBtn');
+saveBtn.addEventListener('click', () => {
+    let changes = gridTestFlow.getModifiedRows();
+    let valid = true;
+
+    changes.createdRows.forEach(row => {
+        if (!row.testCode || row.testCode.trim() == "") {
+            toastr.error('검사코드를 선택 후 엔터를 쳐주세요.');
+            valid = false;
+            return;
+        }
+    });
+
+    if (!valid) {
+        return;
+    }
+
+    if (changes.createdRows.length >= 1) {
+        console.log('Created Rows:', changes.createdRows);
+        $.ajax({
+            type: 'POST',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+            url: '/test/testFlow',
+            contentType: 'application/json',
+            data: JSON.stringify(changes.createdRows),
+            success: function (response) {
+                toastr.success('등록되었습니다.');
+            }
+
+        });
+    } else if (changes.updatedRows.length > 0) {
+        console.log('수정갯수 :', changes.updatedRows);
+        $.ajax({
+            type: 'PUT',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+            url: '/test/testFlow',
+            contentType: 'application/json',
+            data: JSON.stringify(changes.updatedRows),
+            success: function (response) {
+                toastr.success('수정되었습니다.');
+                gridTestFlow.resetOriginData();
+                gridTestFlow.refreshLayout();
+            }
+        });
+    } else {
+        toastr.info('변경된 데이터가 없습니다.');
+    }
+});
+
+const delBtn = document.getElementById('delBtn');
+delBtn.addEventListener('click', () => {
+    let check = gridTestFlow.getCheckedRows();
+    if (check.length > 0) {
+        $.ajax({
+            type: 'DELETE',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+            url: '/test/testFlow',
+            contentType: 'application/json',
+            data: JSON.stringify(check),
+            success: function (response) {
+                if (response === "삭제완료") {
+                    toastr.error('삭제되었습니다.');
+                    gridTestFlow.removeCheckedRows();
+                    gridTestFlow.refreshLayout();
+                } else {
+                    toastr.error('삭제 실패');
+                }
+            }
+        });
+    } else {
+        toastr.warning('삭제할 행을 선택하세요.');
+    }
+});
+
+const appendBtn = document.getElementById('appendBtn');
+appendBtn.addEventListener('click', () => {
+    let selectedProcRowKey = gridProc.getFocusedCell().rowKey;
+    let selectedProcRow = gridProc.getRow(selectedProcRowKey);
+
+    if (selectedProcRow) {
+        let newRow = {
+            procCode: selectedProcRow.procCode,
+            procName: selectedProcRow.procName,
+            testFlowCode: '',
+            testCode: '',
+            passCriteria: ''
+        };
+
+        console.log("새로운 행 : ", newRow);
+
+        gridTestFlow.appendRow(newRow);
+        gridTestFlow.refreshLayout();
+        toastr.success('행이 추가되었습니다.');
+    } else {
+        toastr.error('공정코드를 선택하세요.');
+    }
+});
+
+const testModalGrid = new tui.Grid({
+    el: document.getElementById('grid-modal-test'),
+    scrollX: false,
+    scrollY: false,
+    rowHeaders: ['checkbox'],
+    pageOptions: {
+        perPage: 10,
+        useClient: true,
+    },
+    columns: [
+        { header: '검사코드', name: 'testCode', align: 'center' },
+        { header: '검사명', name: 'testName', align: 'center' },
+        { header: '검사항목', name: 'testItem', align: 'center' },
+        { header: '단위', name: 'testItemUnit', align: 'center' },
+        { header: '비고', name: 'note', align: 'center' },
+    ],
+});
+
+gridTestFlow.on("click", (e) => {
+    if (e.columnName === 'testCode') {
+        $('#search-test-Modal').modal('show');
+    }
+});
+
+$('#search-test-Modal').on('shown.bs.modal', function () {
+    testModalData();
+});
+
+$('#modal-test-search-btn').on('click', function () {
+    let testCode = $('#modal-search-test-input').val();
+    $.ajax({
+        url: '/test/searchTest',
+        method: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        data: { testCode: testCode },
+        success: function (data) {
+            testModalGrid.resetData(data);
+            testModalGrid.refreshLayout();
+        },
+        error: function (error) {
+            toastr.error('에러' + error);
+        }
+    });
+});
+
+testModalGrid.on("click", (e) => {
+    let selectedRow = testModalGrid.getRow(e.rowKey);
+    let selectedTestCode = selectedRow.testCode;
+    let selectedRowKey = gridTestFlow.getFocusedCell().rowKey;
+    let rowData = gridTestFlow.getRow(selectedRowKey);
+
+    rowData.testCode = selectedTestCode;
+
+    gridTestFlow.setRow(selectedRowKey, rowData);
+    gridTestFlow.refreshLayout();
+
+    $('#search-test-Modal').modal('hide');
+});
+
+function testModalData() {
+    $.ajax({
+        url: '/test/testModalData',
+        method: 'GET',
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function (data) {
+            testModalGrid.resetData(data);
+            testModalGrid.refreshLayout();
+        },
+        error: function (error) {
+            toastr.error('에러' + error);
+        }
+    });
+}
+
+function getSearchList() {
+	$.ajax({
+		type: 'get',
+		url: '/test/searchProcList',
+		beforeSend : function(xhr) {
+			xhr.setRequestHeader(header, token);
+		},
+		data: $("form[name=search-form]").serialize(),
+		success: function(result) {
+			if (result.length > 0) {
+				gridProc.resetData(result); // 그리드에 데이터를 넣음
+			} else {
+				gridProc.clear(); // 그리드 데이터 비움
+			}
+		}
+	});
+}   
+document.querySelector('form[name="search-form"]').addEventListener('submit', (e) => {
+    e.preventDefault(); // 기본 폼 제출 동작 방지
+    getSearchList(); // 검색 함수 호출
+});
+
+procOptions();
+function procOptions() {
+    $.ajax({
+     url: "/test/procOptionList",
+     beforeSend : function(xhr) {
+         xhr.setRequestHeader(header, token);
+     },
+     method: "GET",
+     success: function(result) {
+            result.forEach(code => {
+                if (code.mainCode == 'PC') {
+                    pList.push({
+                        text: code.subCodeName,
+                        value: code.subCode
+                    });
+                } else if (code.mainCode == 'FD') {
+                    fList.push({
+                        text: code.subCodeName,
+                        value: code.subCode
+                    });
+                }
+            });
+
+            gridProc.setColumns([
+                { header: '공정코드', name: 'procCode', align: 'center' },
+                { header: '공정명', name: 'procName', align: 'center', editor: 'text' },
+                {
+                    header: '공정구분',
+                    name: 'procClassCode',
+                    align: 'center',
+                    formatter: 'listItemText',
+                    editor: {
+                        type: 'select',
+                        options: {
+                            listItems: pList
+                        }
+                    }
+                },
+                {
+                    header: '설비구분',
+                    name: 'facClassCode',
+                    align: 'center',
+                    formatter: 'listItemText',
+                    editor: {
+                        type: 'select',
+                        options: {
+                            listItems: fList
+                        }
+                    }
+                },
+            ]);
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+$('.tui-grid-body-container').css("cursor","pointer")
+</script>
+</html>

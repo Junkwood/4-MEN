@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:fragment="HeaderFragment">
+  
+<div id="layoutSidenav_nav">
+    <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+        <div class="sb-sidenav-menu">
+            
+             <div class="nav">
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePages2" aria-expanded="false" aria-controls="collapsePages2">
+                    <div class="sb-nav-link-icon"><i class="bi-motherboard"></i></div>
+                    관리자용
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse" id="collapsePages2" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages2">
+                    <a class="nav-link" th:href="@{/admin/subCode}">공통코드 관리</a>
+                    <a class="nav-link" th:href="@{/admin/clientManager}">거래처 관리</a>
+                    <a class="nav-link" th:href="@{/admin/matManager}">자재 관리</a>
+                        <a class="nav-link" th:href="@{/admin/prodManager}">제품 관리</a>
+                        <a class="nav-link" th:href="@{/admin/facManager}">설비 관리</a>
+                         <a class="nav-link" th:href="@{/admin/emp}">사원 관리</a>
+                        <a class="nav-link" th:href="@{/admin/bomManager}">BOM 관리</a>
+                        <a class="nav-link" th:href="@{/admin/procManager}">공정 관리</a>
+                         <a class="nav-link" th:href="@{/admin/flow}">공정 흐름도 관리</a>
+                        
+                    </nav>
+                </div>
+            </div>
+            <div class="nav">
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePages3" aria-expanded="false" aria-controls="collapsePages3">
+                    <div class="sb-nav-link-icon"><i class="bi-boxes"></i></div>
+                    영업관리
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse" id="collapsePages3" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages3">
+                        <a class="nav-link" th:href="@{/business/add}">주문관리</a>
+                        <a class="nav-link" th:href="@{/business/orderList}">주문조회</a>
+                        <a class="nav-link" th:href="@{/business/dispatch}">출고관리</a>
+                        <a class="nav-link" th:href="@{/business/dispatchList}">출고조회</a>
+                        <a class="nav-link" th:href="@{/business/finished}">완제품입고관리</a>
+                        <a class="nav-link" th:href="@{/business/inventory}">완제품재고조회</a>
+                    </nav>
+                </div>
+            </div>
+            
+            <div class="nav">
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePages4" aria-expanded="false" aria-controls="collapsePages4">
+                    <div class="sb-nav-link-icon"><i class="bi-box-seam"></i></div>
+                    자재관리
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse" id="collapsePages4" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages4">
+                        <a class="nav-link" th:href="@{/mat/matOrderPage}">자재 발주 관리</a>
+                        <a class="nav-link" th:href="@{/mat/matOrderListPage}">자재 발주 조회</a>
+                        <a class="nav-link" th:href="@{/mat/matInspectPage}">자재 검수</a>
+                        <a class="nav-link" th:href="@{/matList}">자재 입출고 조회</a>
+                    </nav>
+                </div>
+            </div>
+            <div class="nav">
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePages5" aria-expanded="false" aria-controls="collapsePages5">
+                    <div class="sb-nav-link-icon"><i class="bi-bounding-box"></i></div>
+                    생산관리
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse" id="collapsePages5" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages5">
+                    	<a class="nav-link" th:href="@{/prod/manufacturePlan}">생산 계획 관리</a>
+                        <a class="nav-link" th:href="@{/prod/workInstruct}">작업 지시 관리</a>
+                        <a class="nav-link" th:href="@{/prod/workInstructList}">작업 지시 목록</a>
+                        <a class="nav-link" th:href="@{/prod/workProgress}">공정 목록</a>
+                        <a class="nav-link" th:href="@{/prod/searchWorkProgress}">공정 진행 현황 조회</a>
+      
+                    </nav>
+                </div>
+            </div>
+            <div class="nav">
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePages6" aria-expanded="false" aria-controls="collapsePages6">
+                    <div class="sb-nav-link-icon"><i class="bi-tools"></i></div>
+                    설비관리
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse" id="collapsePages6" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages6">
+                        <a class="nav-link" th:href="@{/prod/noOperation}">가동비가동관리</a>
+                        <a class="nav-link" th:href="@{/facility/check}">설비 점검 관리</a>
+                        <a class="nav-link" th:href="@{/facility/repair}">설비 수리 관리</a>
+                        <a class="nav-link" th:href="@{/facility/noList}">설비 비가동사유 조회</a>
+                    </nav>
+                </div>
+            </div>
+            <div class="nav">
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePages7" aria-expanded="false" aria-controls="collapsePages7">
+                    <div class="sb-nav-link-icon"><i class="bi-eyedropper"></i></div>
+                    품질관리
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+                <div class="collapse" id="collapsePages7" aria-labelledby="headingTwo" data-bs-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages7">
+                        <a class="nav-link" th:href="@{/test/testManager}">검사 기준 관리 </a>
+                        <a class="nav-link" th:href="@{/test/testFlowManager}">검사 흐름도 관리 </a>
+                        <a class="nav-link" th:href="@{/test/inspectManager}">검사 처리 관리</a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        
+        
+        <div class="sb-sidenav-footer">
+            <div class="container text-center">
+              <div sec:authorize="isAuthenticated()">
+                <span th:text="${#authentication.principal.empName}"></span>님 환영합니다.
+               </div>
+                 <div sec:authorize="!isAuthenticated()">
+                   어서오세요.
+                 </div>
+            </div>
+        </div>
+    </nav>
+</div>
+</html>

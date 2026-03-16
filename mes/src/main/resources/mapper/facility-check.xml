@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   <mapper namespace="com.aio.mes.facility.mapper.FacilityCheckMapper">
+     <select id="checkList" parameterType="facilityVO">
+        SELECT fac_code,
+      		   fac_name,
+     		   fac_class_name,
+      		   inspect_cycle,
+       		   process_date last_process_date,
+       		  insp_class_name
+       
+		FROM    (SELECT  f.fac_code,
+        			     f.fac_name,
+           				 get_mes_sub_code_name(f.fac_class_code) fac_class_name,
+      			         f.inspect_cycle, 
+            			 i.process_date,
+            			 ROW_NUMBER() OVER (PARTITION BY f.fac_code ORDER BY i.process_date DESC) rn,
+           				 i.insp_class_code,
+           				 get_mes_sub_code_name(i.insp_class_code) insp_class_name
+    				FROM fac f LEFT JOIN fac_insp i
+              					ON(f.fac_code=i.fac_code))
+	  WHERE rn=1
+	      <if test="facName != null and !facName.equals('')">
+            AND fac_name LIKE '%'||#{facName}||'%'
+         </if>
+         <if test="processDate1 != null and !processDate1.equals('')">
+             ANd process_date BETWEEN TO_DATE(#{processDate1}, 'YYYY-MM-DD')
+                			      AND TO_DATE(#{processDate2}, 'YYYY-MM-DD') 
+         </if>
+     </select>
+     <select id="optionList">
+           SELECT sub_code,
+     		 	  sub_code_name  
+			FROM mes_sub_code
+			WHERE main_code='GR'
+     </select>
+     <insert id="checkAdd" parameterType="facilityVO">
+      <selectKey keyProperty="facInspCode"   
+                    resultType="String"
+                    order="BEFORE">
+                 SELECT 'INST'||(NVL(MAX(order_num),0) + 1) AS fac_insp_code 
+               FROM (
+                    SELECT TO_NUMBER(SUBSTR(fac_insp_code,5)) AS order_num
+                    FROM fac_insp
+               )
+         </selectKey>
+         INSERT INTO fac_insp
+                 		(fac_insp_code,
+                    	 fac_code,
+                  		 registration_date,
+                  	 	 process_date,
+                  	 	 emp_code,
+                  	 	 insp_class_code)
+             VAlUES (#{facInspCode},
+                     #{facCode},
+                     sysdate,
+                     #{processDate},
+                     #{empCode},
+                     'CD2')
+     </insert>
+   <select id="checkProcess" parameterType="facilityVO">
+         SELECT fac_insp_code,
+             	fac_code,
+            	find_fac_name(fac_code) fac_name,
+             	get_mes_sub_code_name(insp_class_code) insp_class_name,
+            	registration_date,
+             	process_date,
+            	 process_history,
+           	     process_result,
+             	 note
+    		FROM fac_insp
+    	WHERE process_result IS NULL
+    	<if test="facName != null and !facName.equals('')">
+            AND find_fac_name(fac_code) LIKE '%'||#{facName}||'%'
+         </if>
+        <if test="processDate1 != null and !processDate1.equals('')">
+             ANd process_date BETWEEN TO_DATE(#{processDate1}, 'YYYY-MM-DD')
+                			      AND TO_DATE(#{processDate2}, 'YYYY-MM-DD') 
+        </if>
+   </select>
+   <update id="checkUpdate" parameterType="facilityVO">
+         UPDATE fac_insp
+    		SET process_history=#{processHistory},
+       	        process_result=#{processResult},
+                emp_code=#{empCode},
+                note=#{note}
+    	  WHERE fac_insp_code=#{facInspCode}
+   </update>
+   <update id="checkStatus1" parameterType="facilityVO">
+       UPDATE fac
+    	  SET fac_status ='FS1'
+    	WHERE fac_code=#{facCode}
+   </update>
+   <update id="checkStatus2" parameterType="facilityVO">
+       UPDATE fac
+    	  SET fac_status ='FS3'
+    	WHERE fac_code=#{facCode}
+   </update>
+   <delete id="checkDelete" parameterType="facilityVO">
+       DELETE FROM fac_inst
+       WHERE fac_insp_code={facInspCode}
+   </delete>
+   <update id="successResult" parameterType="facilityVO">
+        UPDATE fac_not
+		   SET NOT_END_DATE=sysdate
+		 WHERE fac_code=#{facCode}
+		   AND fac_not_reason_code='NF2'
+   </update>
+   <insert id="failResult" parameterType="facilityVO">
+        INSERT INTO fac_not(fac_not_code,
+                    fac_code,
+                    emp_code,
+                    not_start_date,
+                    fac_not_reason_code,
+                    note)
+		VALUES(AUTO_FACNOT_CODE(),
+      		 #{facCode},
+       		#{empCode},
+       		sysdate,
+      		 'NF4',
+       		#{note})
+   </insert>
+   </mapper>

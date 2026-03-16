@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aio.mes.security.mapper.UserMapper">
+
+    <select id="getUserInfo" resultType="com.aio.mes.security.service.UserVO">
+        SELECT
+        emp_code as empCode,
+        password,
+        emp_name as empName,
+        dept_id as deptId,
+        ent_member_code as entMemberCode,
+        rank
+        FROM emp
+        WHERE emp_code = #{username}
+    </select>
+
+</mapper>

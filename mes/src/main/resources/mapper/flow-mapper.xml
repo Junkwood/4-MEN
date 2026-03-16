@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="com.aio.mes.flow.mapper.FlowMapper">
+    <select id="flowProdSearch" resultType="FlowVO">
+     SELECT prod_code,
+            prod_name,
+            unit
+	 FROM prod_common
+		<if test="prodName != null and !prodName.equals('')">
+     WHERE prod_name LIKE '%'||#{prodName}||'%'
+        </if>
+     </select>
+     <select id="flowSearch" resultType="FlowVO">
+        SELECT proc_flow_code,
+	           prod_code,
+    	       proc_code,
+    	       FIND_PROD_NAME(prod_code) prod_name,
+               proc_num,
+               proc_name,
+               note
+          FROM proc_flow
+	   <if test="prodCode != null and !prodCode.equals('')">
+            WHERE prod_code LIKE '%'||#{prodCode}||'%'
+       </if>
+        ORDER BY proc_num
+     </select>
+     <select id="procSearch" resultType="FlowVO" parameterType="FlowVO">
+        SELECT proc_code,
+           proc_name,
+           note,
+           get_mes_sub_code_name(proc_class_code) procClassName,
+           fac_class_code,
+           proc_class_code
+        FROM proc
+      <where>
+      <if test="procClassCode != null and !procClassCode.equals('')">
+            AND PROC_CLASS_CODE= #{procClassCode} 
+      </if>
+     <if test="procName != null and !procName.equals('')">
+           AND proc_name LIKE '%'||#{procName}||'%'
+      </if>
+     </where>
+    
+     </select>
+     <insert id="flowAdd" parameterType="FlowVO">
+      <selectKey keyProperty="procFlowCode"   
+                    resultType="String"
+                    order="BEFORE">
+           SELECT 'PF'||(NVL(MAX(order_num),0) + 1) AS proc_flow_code 
+               FROM (
+                    SELECT TO_NUMBER(SUBSTR(proc_flow_code, 3)) AS order_num
+                    FROM proc_flow
+               )
+       </selectKey> 
+       INSERT INTO proc_flow(proc_flow_code,
+                      proc_num,
+                      proc_code,
+                       proc_name,
+                       prod_code,
+                      note)
+		VALUES (#{procFlowCode},
+       			#{procNum},
+     		  	#{procCode},
+       			#{procName},
+       			#{prodCode},
+       			#{note})
+     </insert>
+     <update id="flowModify" parameterType="ModifyFlowVO">
+         UPDATE proc_flow
+		 SET proc_num=#{procNum},
+ 	    	 proc_code=#{procCode},
+ 	    	 proc_name=#{procName},
+   			 note=#{note}
+		WHERE proc_flow_code=#{procFlowCode}
+     </update>
+     <delete id="flowDelete" parameterType="DeleteFlowVO">
+        DELETE FROM proc_flow
+        WHERE proc_flow_code=#{procFlowCode}
+     </delete>
+  </mapper>

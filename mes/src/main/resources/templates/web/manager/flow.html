@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+<style>
+#saveBtn {
+	margin-bottom: 30px;
+	margin-right: 30px;
+}
+.float-end{
+     margin-bottom:30px;
+}
+
+</style>
+</head>
+<body>
+	<div class="container">
+		<h1>제품 조회</h1>
+		<input class="form-control me-2 order-search" type="search"
+			placeholder="제품명 검색" aria-label="Search" id="searchOrder">
+		<button class="btn btn-outline-success" type="button" id="searchBtn">검색</button>
+		<h1>제품목록</h1>
+		<div class="row orderCallTable">
+
+			<div class="col-12">
+				<div id="grid1"></div>
+			</div>
+		</div>
+		<h1>공정 흐름도목록</h1>
+		<input type='button' class="btn btn-outline-primary float-end"
+			value="저장" id="saveBtn"> <input type='button'
+			class="btn btn-outline-danger float-end" id="minusBtn" value="ㅡ">
+		<input type='button' class="btn btn-outline-success float-end"
+			id="plusBtn" value="╆">
+		<div class="row orderCallTable">
+			<div class="col-12">
+				<div id="grid2"></div>
+			</div>
+		</div>
+	</div>
+	<div class="modal fade" id="Dispatch-Modal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-4 order-search-title textInline" 
+						id="exampleModalLabel">공정 조회</h1>
+				    <button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="order-search-nav searchGroup">
+                           <div class="form-check form-check-inline ">
+  					  <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="" checked>
+ 					  <label class="form-check-label" for="inlineRadio1">모두</label>
+			   </div>
+			    <div class="form-check form-check-inline">
+  						 <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="PC1">
+  						 <label class="form-check-label" for="inlineRadio2">일반공정</label>
+			   </div>
+			  <div class="form-check form-check-inline">
+ 					    <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" value="PC2">
+ 					    <label class="form-check-label" for="inlineRadio3">검사공정</label>
+			  </div>
+						<input class="form-control me-2 order-search" type="search"
+							placeholder="공정명검색" aria-label="Search" id="searchDispatch">
+						<button class="btn btn-outline-success" type="button" id="searchDisBtn">검색</button>
+					</div>
+		
+				
+		
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-12">
+							<div id="grid3"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+					</div>
+				</div>
+			</div>
+		</div>
+  </div>
+  <!-- 모달창 -->
+<div class="modal fade" id="Sucess-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">등록 완료</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: center;">
+          <img src="/images/smileImg.png" width="200" alt="Smile Image">
+          <h3 style="margin-top: 20px; font-family: 'Noto Sans KR', sans-serif;">등록이 완료되었습니다.</h3>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-success" id="nextLevel">등록 완료</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+<script th:inline="javascript">
+//csrf 토큰 넣을 값 가져오기
+const token = $("meta[name='_csrf']").attr("content")
+const header = $("meta[name='_csrf_header']").attr("content");
+
+	const grid1 = new tui.Grid({
+		el : document.getElementById('grid1'),
+		scrollX : false,
+		scrollY : false,
+		pageOptions : {
+			perPage : 5,
+			useClient : true,
+		},
+		columns : [ {
+			header : '제품코드',
+			name : 'prodCode',
+			align : 'center'
+		}, {
+			header : '제품명',
+			name : 'prodName',
+			align : 'center'
+		}, {
+			header : '단위',
+			name : 'unit',
+			align : 'center'
+		}, ],
+
+	});
+	const grid2 = new tui.Grid({
+		el : document.getElementById('grid2'),
+		scrollX : false,
+		scrollY : false,
+		rowHeaders : [ 'checkbox' ],
+		columns : [ {
+			header : '공정흐름도코드',
+			name : 'procFlowCode',
+			align : 'center'
+		}, {
+			header : '공정순서',
+			name : 'procNum',
+			align : 'center'
+		}, {
+			header : '공정코드',
+			name : 'procCode',
+			align : 'center'
+		}, {
+			header : '공정명',
+			name : 'procName',
+			align : 'center'
+		}, {
+			header : '제품명',
+			name : 'prodName',
+			align : 'center'
+		}, {
+			header : '제품코드',
+			name : 'prodCode',
+			align : 'center'
+		}, {
+			header : '비고',
+			name : 'note',
+			align : 'center',
+			editor : 'text'
+		}, ],
+
+	});
+	const grid3 = new tui.Grid({
+		el : document.getElementById('grid3'),
+		scrollX : false,
+		scrollY : false,
+		pageOptions: {
+            perPage: 5,
+            useClient: true,
+        },
+		columns : [ 
+		{
+			header : '공정코드',
+			name : 'procCode',
+			align : 'center'
+		}, {
+			header : '공정명',
+			name : 'procName',
+			align : 'center'
+		}, {
+			header : '공정구분',
+			name : 'procClassName',
+			align : 'center'
+		}, {
+			header : '비고',
+			name : 'note',
+			align : 'center'
+		}, 
+		],
+
+	});
+grid2.hideColumn("procFlowCode");
+grid2.hideColumn("procCode");
+grid2.hideColumn("prodCode");
+
+$('#searchBtn').on('click', function(ev) {
+		let prodName = $('#searchOrder').val()
+		$.ajax({
+			url : "/flow/prodName",
+			method : "GET",
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			data : {
+				prodName : prodName,
+			},
+			success : function(result) {
+				grid1.resetData(result);
+			},
+			error : function(error) {
+				console.error('AJAX 요청 실패:', error);
+			}
+		});
+	})
+	$('#searchOrder').on("keyup", function(key) {
+		if (key.keyCode == 13) {
+			let prodName = $('#searchOrder').val()
+			$.ajax({
+				url : "/flow/prodName",
+				method : "GET",
+				beforeSend : function(xhr) {
+		            xhr.setRequestHeader(header, token);
+		        },
+				data : {
+					prodName : prodName,
+				},
+				success : function(result) {
+					grid1.resetData(result);
+				},
+				error : function(error) {
+					console.error('AJAX 요청 실패:', error);
+				}
+			});
+		}
+	});
+	//클릭한 제품코드와 제품이름을 담기
+	let prodCode = '';
+	let prodName = '';
+
+	grid1.on('click', function(ev) {
+		if (ev.targetType == 'cell') {
+			prodCode = grid1.getValue(ev.rowKey, 'prodCode');
+			prodName = grid1.getValue(ev.rowKey, 'prodName');
+			$.ajax({
+				url : "/flow/prodFlowSearch",
+				method : "GET",
+				beforeSend : function(xhr) {
+		            xhr.setRequestHeader(header, token);
+		        },
+				data : {
+					prodCode : prodCode,
+				},
+				success : function(result) {
+					grid2.resetData(result);
+				},
+				error : function(error) {
+					console.error('AJAX 요청 실패:', error);
+				}
+			});
+		}
+	})
+	$('#plusBtn').on('click', function(ev) {
+		if (prodCode == '') {
+			toastr.error('제품을 클릭하세요')
+			return;
+		}
+		//미리행을 추가
+		grid2.appendRow();
+		//추가하고 데이터를 가져옴
+		let grid2Data = grid2.getData();
+		//그데이터 rowkey를 가져옴
+		let maxRowKey = grid2Data[grid2Data.length-1].rowKey;
+		//실질적으로 넣을 값을 가져옴
+		let rowCount = grid2.getData().length;
+		//rowkey가져온값에 줄행수마다 procNum에 값을 집어넣음
+		grid2.setValue(maxRowKey, 'procNum', rowCount);
+		grid2.setValue(maxRowKey,'prodName',prodName);
+		grid2.setValue(maxRowKey,'prodCode',prodCode);
+
+	});
+	$('#minusBtn').on('click', function(ev) {
+		let selectedRows = grid2.getCheckedRows();
+		//행을제거
+		if (selectedRows.length > 0) {
+			for (let i = selectedRows.length - 1; i >= 0; i--) {
+				grid2.removeRow(selectedRows[i].rowKey)
+				grid2.refreshLayout();
+			}
+		} else {
+			toastr.error('선택된행이 없습니다.')
+		}
+		//grid2의 데이터를가져옴
+		let grid2Data = grid2.getData();
+		if(grid2Data!=0){
+		//grid2의 제일작은 로우키를 가져옴
+		let minRowKey= grid2Data[0].rowKey;
+		//grid2의 맥스인 로우키를 가져옴
+		let maxRowKey = grid2Data[grid2Data.length-1].rowKey;
+		//실질적으로 우선순위 값을 넣을 변수
+		let count = 1;
+		for(let i = minRowKey; i < maxRowKey +1; ++i){
+			let val = grid2.getValue(i,'procNum');
+			if(val != null && val != ''){
+				//로우키를 찾아서 procNum에 값을 넣음
+				grid2.setValue(i,'procNum',count);
+				//우선순위는 순차적으로 값을 증가하여야하기 때문에 값을 증가함
+				count++;
+			}
+		}
+	  }
+	})
+	let grid2Row = 0;
+	grid2.on('click',function(ev){
+		if(ev.columnName=='procCode'||ev.columnName=='procName'){
+			 $('#Dispatch-Modal').on('shown.bs.modal', function () {
+				 grid2Row = ev.rowKey
+			     ajaxProcList();
+			 }).modal('show');
+		}
+	})
+	function ajaxProcList(procName,procClassCode){
+		 $.ajax({
+		        url: "/flow/procSearch",
+		        method: "GET",
+		        beforeSend : function(xhr) {
+		            xhr.setRequestHeader(header, token);
+		        },
+		        data: {
+		        	procName: procName,
+		        	procClassCode: procClassCode,
+		        },
+		        success: function(result) {
+		            grid3.resetData(result);
+		            grid3.refreshLayout();
+		        },
+		        error: function(error) {
+		            console.error('AJAX 요청 실패:', error);
+		        }
+		    });
+	}
+	//클릭시 검색 조회
+	$('#searchDisBtn').on('click',function(){
+		let procName = $('#searchDispatch').val();
+		let procClassCode = $('input[name=inlineRadioOptions]:checked').val();
+		ajaxProcList(procName,procClassCode);
+	})
+	//엔터시 검색 조회
+	$('#searchDispatch').on("keyup",function(key){
+		if(key.keyCode == 13){
+			let procName = $('#searchDispatch').val();
+			let procClassCode = $('input[name=inlineRadioOptions]:checked').val();
+			ajaxProcList(procName,procClassCode);
+		}
+	})
+	//라디오버튼 변경시 발생
+	$('input[name=inlineRadioOptions]').change(function(){
+		let procName = $('#searchDispatch').val();
+		let procClassCode = $('input[name=inlineRadioOptions]:checked').val();
+		ajaxProcList(procName,procClassCode);
+	})
+	grid3.on('click',function(ev){
+		if(ev.targetType==='cell'){
+			let procCode = grid3.getValue(ev.rowKey,'procCode')
+			let procName = grid3.getValue(ev.rowKey,'procName')
+			grid2.setValue(grid2Row,'procCode',procCode)
+			grid2.setValue(grid2Row,'procName',procName)
+			$('#Dispatch-Modal').modal('hide');
+		}
+	})
+	$('#saveBtn').on('click',function(ev){
+		let rowCount = grid2.getRowCount();
+		const changes = grid2.getModifiedRows();
+		changes.createdRows.forEach(row => {
+			if(!row.procCode || row.procCode.trim() ===""){
+				toastr.error('공정을 선택하세요')
+				return;
+			}
+		})
+		changes.updatedRows.forEach(row => {
+			if(!row.procCode || row.procCode.trim() ===""){
+				toastr.error('공정을선택하세요')
+				return;
+			}
+		})
+		$.ajax({
+	        url: "/flowAdd",
+	        method: "post",
+	        beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+	        data : JSON.stringify({add:changes.createdRows,
+	        						modify:changes.updatedRows,
+	        						drop:changes.deletedRows}),
+	        contentType: 'application/json',
+	        success: function(result) {
+	            $('#Sucess-modal h3').text("등록이 완료되었습니다.")
+	           	$('#nextLevel').text('등록완료')
+	        	$('#Sucess-modal').modal('show');
+	        },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    }); 
+		
+	})
+$('#nextLevel').on('click',function(ev){
+	$('#Sucess-modal').modal('hide');
+})
+$('#Sucess-modal').on('hidden.bs.modal', function (e) {
+	window.location.href = '/admin/flow';
+})
+</script>
+</html>

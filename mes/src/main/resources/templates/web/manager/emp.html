@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+    <!-- https://github.com/nhn/tui.grid/blob/master/packages/toast-ui.grid/examples/example08-date-picker.html -->
+   <style>
+      .rightBtn{
+          margin-top:50px;
+      }
+    
+  </style>
+
+</head>
+  
+<body>
+   <div class="container">
+		<h1>사원관리</h1>
+		<div class="order-search-nav searchGroup float-start" >
+                         <select class="form-select order-select" style="float: left;"
+							aria-label="Default select example" id=orderSelect>
+							<option selected value="empName">이름</option>
+							<option value="deptId">부서</option>
+							<option value="rank">직급</option>
+						</select> 
+						<input class="form-control me-2 order-search" type="search" style="float: left;"
+							placeholder="검색" aria-label="Search" id="searchOrder">
+						<button class="btn btn-outline-success" type="button" id="searchBtn" style="float: left;">검색</button>
+		</div>
+		<div class="order-container" style="float: right;" id='groub-btn'>
+			<div class="float-end rightBtn">
+				<input type='button' class="btn btn-outline-primary" value="저장" id="saveBtn">
+				<input type='button' class="btn btn-outline-success" id="plusBtn" value="╆">
+	            <input type='button' class="btn btn-outline-danger" id="minusBtn" value="ㅡ">
+			</div>
+		</div>
+		  
+		   <div class="row orderCallTable">
+			   <div class="col-12">
+				    <div id="grid1"></div>
+			   </div>
+			</div>
+	</div>
+	
+<div class="modal fade" id="Sucess-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">등록 완료</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: center;">
+          <img src="/images/smileImg.png" width="200" alt="Smile Image">
+          <h3 style="margin-top: 20px; font-family: 'Noto Sans KR', sans-serif;">등록이 완료되었습니다.</h3>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-success" id="nextLevel">등록 완료</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+<script th:inline="javascript">
+//csrf 토큰 넣을 값 가져오기
+const token = $("meta[name='_csrf']").attr("content")
+const header = $("meta[name='_csrf_header']").attr("content");
+
+const grid1 = new tui.Grid({
+        el: document.getElementById('grid1'),
+        scrollX: false,
+        scrollY: false,
+        pageOptions: {
+            perPage: 5,
+            useClient: true,
+        },
+        rowHeaders: [
+        	  'checkbox',
+    	    { type: 'rowNum', align: 'center'},
+    	  ],
+        columns: [
+            { header: '사원코드', name: 'empCode',align:'center'},
+            { header: '이름', name: 'empName', editor:'text',align:'center'},
+            { header: '이메일', name: 'email',editor:'text'},
+            { header: '전화번호', name: 'tel',editor:'text',align:'center'},
+            { header: '생년월일', name: 'birthDate',editor: 'datePicker',align:'center'},
+            { header: '소속부서', name: 'deptId',editor:'text',align:'center'},
+            { header: '직급', name: 'rank',editor:'text',align:'center'},
+            { header: '비밀번호변경',
+            	name: 'password',
+            	editor:'password',
+            	formatter: function({ value }) {
+            		if (value === null || value === undefined) {
+                        return '';
+                    }
+            	    return '*'.repeat(value.length);
+            	}
+            },
+        ],
+    });
+    
+function ajaxEmpList(rank='',deptId='',empName=''){
+	 $.ajax({
+	        url: "/admin/empList",
+	        method: "GET",
+	        data: {
+	        	rank : rank,
+	        	deptId : deptId,
+	        	empName : empName
+	        },
+	        beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+	        success: function(result) {
+	            grid1.refreshLayout();
+	            grid1.resetData(result);
+	        },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    });
+}
+ajaxEmpList();
+//클릭시 사원정보 조회
+$('#searchBtn').on('click', function(){
+    let rank = '';
+    let empName= '';
+    let deptId = '';
+    let optionSelect = $('#orderSelect :selected').val();
+    if(optionSelect == 'rank'){
+        rank = $('#searchOrder').val();
+    } else if(optionSelect == 'empName'){
+    	empName = $('#searchOrder').val();
+    } else if(optionSelect == 'deptId'){
+    	deptId = $('#searchOrder').val();
+    } 
+    ajaxEmpList(rank,deptId,empName);
+});
+//엔터클릭시 사원정보 조회
+$('#searchOrder').on("keyup", function(key){
+    if(key.keyCode == 13){
+    	let rank = '';
+        let empName= '';
+        let deptId = '';
+        let optionSelect = $('#orderSelect :selected').val();
+       		 if(optionSelect == 'rank'){
+           		 rank = $('#searchOrder').val();
+        		} 
+       		 else if(optionSelect == 'empName'){
+        			empName = $('#searchOrder').val();
+       		 } 
+       		 else if(optionSelect == 'deptId'){
+        			deptId = $('#searchOrder').val();
+        		} 
+        ajaxEmpList(rank,deptId,empName);
+    }
+});  
+$('#plusBtn').on('click', function(ev) {
+	let grid1RowCount =grid1.getRowCount();
+	let grid1Data = grid1.getData();
+	let lastEmpCode = grid1Data[0].empCode
+	let empNumber = lastEmpCode.substr(3)
+	let empPlus= Number(empNumber)+1;
+  let empCode = {
+		  empCode:'emp'+empPlus
+  }
+	grid1.prependRow(empCode);
+});
+$('#minusBtn').on('click', function(ev){
+    let selectedRows = grid1.getCheckedRows();
+    if(selectedRows.length > 0){
+        for(let i = selectedRows.length - 1; i >= 0; i--){
+            grid1.removeRow(selectedRows[i].rowKey);
+        }
+    } else {
+        toastr.error('선택된 행이 없습니다.');
+    }
+    
+});
+//등록
+$('#saveBtn').on('click',function(ev){
+	let rowCount = grid1.getRowCount();
+	const changes = grid1.getModifiedRows();
+	let valid = true;
+	changes.createdRows.forEach(row => {
+		if(!row.empName || row.empName.trim() ===""){
+			toastr.error('이룸을입력하세요')
+			valid=false;
+			return;
+		}
+		if(!row.email || row.email.trim() ===""){
+			toastr.error('이메일을 입력하세요')
+			valid=false;
+			return;
+		}
+		if(!row.tel || row.tel.trim() ===""){
+			toastr.error('전화번호를 입력하세요')
+			valid=false;
+			return;
+		}
+		if(!row.birthDate|| row.birthDate.trim() ===""){
+			toastr.error('생년월일을 입력하세요')
+			valid=false;
+			return;
+		}
+		if(!row.rank || row.rank.trim() ===""){
+			toastr.error('직급을 입력하세요')
+			valid=false;
+			return;
+		}
+		if(!row.deptId || row.deptId.trim() ===""){
+			toastr.error('부서를 입력하세요')
+			valid=false;
+			return;
+		}
+		
+})
+	changes.updatedRows.forEach(row => {
+		if(!row.empName || row.empName.trim() ===""){
+			toastr.error('이룸을입력하세요')
+			valid=false;
+			return;
+		}
+		if(!row.email || row.email.trim() ===""){
+			toastr.error('이메일을 입력하세요')
+			valid=false;
+			return;
+		}
+		if(!row.tel || row.tel.trim() ===""){
+			toastr.error('전화번호를 입력하세요')
+			valid=false;
+			return;
+		}
+		if(!row.birthDate|| row.birthDate.trim() ===""){
+			toastr.error('생년월일을 입력하세요')
+			valid=false;
+			return;
+		}
+		if(!row.rank || row.rank.trim() ===""){
+			toastr.error('직급을 입력하세요')
+			valid=false;
+			return;
+		}
+		if(!row.deptId || row.deptId.trim() ===""){
+			toastr.error('부서를 입력하세요')
+			valid=false;
+			return;
+		}
+	})
+	if(!valid){
+		return;
+	}
+	$.ajax({
+        url: "/admin/empAdd",
+        method: "post",
+        data : JSON.stringify({add:changes.createdRows,
+        						modify:changes.updatedRows,
+        						drop:changes.deletedRows}),
+        contentType: 'application/json',
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+            $('#Sucess-modal h3').text("등록이 완료되었습니다.")
+           	$('#nextLevel').text('등록완료')
+        	$('#Sucess-modal').modal('show');
+            },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    }); 
+})
+$('#nextLevel').on('click',function(ev){
+    $('#Sucess-modal').modal('hide');
+})
+
+$('#Sucess-modal').on('hidden.bs.modal', function (e) {
+     window.location.href = '/admin/emp';
+})   
+</script>
+</html>

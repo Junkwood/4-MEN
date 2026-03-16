@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   <mapper namespace="com.aio.mes.finished.mapper.FinishedMapper">
+      <select id="storePossible" resultType="FinishedVO" parameterType="finishedVO">
+     SELECT p.work_instruct_detail_code,
+       c.prod_code,
+       c.prod_name,
+       p.prod_quantity - SUM(NVL(s.store_quantity,0)) prodQuantity
+       
+	  FROM work_instruct_detail i JOIN work_progress p
+                	 ON(i.work_instruct_detail_code = p.work_instruct_detail_code)
+                         	   JOIN prod_common c
+                         	   ON(c.prod_code= i.prod_code)
+                         	LEFT JOIN prod_store s
+                         	   ON(i.work_instruct_detail_code=s.work_instruct_detail_code)
+	      WHERE p.proc_num=(SELECT max(m.proc_num)
+               		        FROM work_progress m
+                		   WHERE p.work_instruct_detail_code=m.work_instruct_detail_code)
+		<if test="prodName != null and !prodName.equals('')">
+            AND c.prod_name LIKE '%'||#{prodName}||'%'
+        </if>
+		GROUP BY p.work_instruct_detail_code,
+         		c.prod_code,
+         		c.prod_name,p.prod_quantity
+       HAVING  p.prod_quantity - SUM(NVL(s.store_quantity,0)) > 0
+    
+    </select>
+    <!-- 로트번호 자동증가 -->
+    <select id="autoLot" resultType="String">
+          SELECT 'LOT-'||(NVL(MAX(order_num),0) + 1) lot
+        FROM (
+               SELECT TO_NUMBER(SUBSTR(lot, 5)) order_num
+        FROM prod_store)
+    </select>
+    <select id="alreadyFinished" resultType="FinishedVO">
+        SELECT i.LOT,
+      		   i.work_instruct_detail_code,
+      		   i.prod_code,
+    		   c.prod_name,
+               i.store_quantity before_quantity,
+               i.store_date,
+               i.emp_code,
+               e.emp_name
+       FROM prod_store i JOIN prod_common c
+            ON (i.prod_code = c.prod_code)
+                         JOIN emp e
+                      ON(e.emp_code = i.emp_code)
+       <where>
+       		<if test="prodName != null and !prodName.equals('')">
+            	AND c.prod_name LIKE '%'||#{prodName}||'%'
+        	</if>
+        <if test="lot != null and !lot.equals('')">
+           		 AND i.LOT LIKE '%'||#{lot}||'%'
+        </if>
+        </where>
+        ORDER BY i.LOT DESC
+    </select>
+    <select id="modifyCheck" resultType ="Integer" parameterType="FinishedVO">
+        SELECT NVL(p.prod_quantity,0) - SUM(NVL(s.store_quantity,0)) prodQuantity
+        
+       	  FROM work_instruct_detail i 
+     LEFT JOIN work_progress p
+            ON (i.work_instruct_detail_code = p.work_instruct_detail_code)
+     LEFT JOIN prod_common c
+            ON (c.prod_code= i.prod_code)
+     LEFT JOIN prod_store s
+       	    ON (i.work_instruct_detail_code=s.work_instruct_detail_code)
+       	    
+	     WHERE p.proc_num = (SELECT max(m.proc_num)
+               		           FROM work_progress m
+                		      WHERE p.work_instruct_detail_code=m.work_instruct_detail_code)
+           AND p.work_instruct_detail_code = #{workInstructDetailCode}
+           AND c.prod_code=#{prodCode}
+   
+		GROUP BY p.prod_quantity
+    </select>
+    <insert id="addFinished" parameterType="FinishedVO">
+       INSERT INTO prod_store(LOT,
+                      work_instruct_detail_code,
+                      prod_code,
+                      store_quantity,
+                      store_date,
+                      emp_code) 
+       VALUES (#{lot},
+               #{workInstructDetailCode},
+               #{prodCode},
+               #{storeQuantity},
+               #{storeDate},
+               #{empCode}
+               )
+  </insert>
+  <update id="updateFinished" parameterType="FinishedVO">
+     UPDATE prod_store
+        SET store_quantity=#{storeQuantity}
+      WHERE LOT = #{lot}
+  </update>
+  <delete id="deleteFinished" parameterType="FinishedVO">
+     DELETE FROM prod_store
+     WHERE LOT =#{lot}
+  </delete>
+   <select id="dispatchCheck" parameterType="String">
+      SELECT count(*)
+      FROM prod_release
+      WHERE lot=#{lot}
+   </select>
+   <select id="finishedList" parameterType="FinishedVO">
+      SELECT LOT,
+        	 FIND_PROD_NAME(prod_code) prod_name,
+        	 store_quantity,
+        	 store_date,
+       	     FIND_EMP_NAME(emp_code) emp_name
+	 FROM prod_store
+	 <where>
+        <if test="lot != null and !lot.equals('')">
+           		 AND LOT LIKE '%'||#{lot}||'%'
+        </if>
+       	<if test="prodName != null and !prodName.equals('')">
+            	AND FIND_PROD_NAME(prod_code) LIKE '%'||#{prodName}||'%'
+        </if>
+        <if test="prodName != null and !prodName.equals('')">
+            	AND FIND_EMP_NAME(emp_code) LIKE '%'||#{empName}||'%'
+        </if>
+    </where>
+    ORDER BY TO_NUMBER(substr(lot,4)) 
+   </select>
+   </mapper>

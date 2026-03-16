@@ -1,0 +1,37 @@
+.order-nav{
+	text-align: right;
+	margin-bottom: 10px;
+}
+.mat-search-nav{
+	text-align: right;
+	width: 70%;
+}
+.modal-header{
+	justify-content: unset !important;
+}
+.modal-header-search-nav{
+	position: absolute;
+    right: 40px;
+    display: flex;
+    height: 40px;
+}
+.modal-header-search-nav-radio{
+	position: absolute;
+    right: 40%;
+}
+.modal-header-search-nav-input{
+	display: inline;
+	float: left;
+	width: 70%;
+}
+.modal-header-search-nav-btn{
+	display: inline;
+	float: left;
+}
+.modal-header-close{
+	position: absolute;
+    right: 20px;
+}
+#modal-matOrder-search-btn{
+	width: 30%;
+}

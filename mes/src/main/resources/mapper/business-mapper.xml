@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   <mapper namespace="com.aio.mes.business.mapper.BusinessMapper">
+      
+      
+      <!-- 업체명조회 -->
+    <select id="clientList" resultType="ClientVO" parameterType="String">
+        SELECT client_code,
+               client_name
+         FROM client
+         WHERE client_type='AC1'
+    </select>
+    <!-- 상품조회 -->
+    <select id="goodsList" resultType="GoodsVO" parameterType="String">
+        SELECT prod_code,
+               prod_name,
+               unit
+         FROM prod_common
+        <if test="prodName != null and prodName != ''">
+          WHERE prod_name LIKE '%'||#{prodName}||'%'
+         </if>
+    </select>
+    <select id="orderSimpleList" resultType="orderSimpleVO" parameterType="BusinessVO"> 
+     SELECT 
+        o.order_code,
+    	o.order_name,
+    	c.client_code,
+    	c.client_name,
+    		CASE 
+        		WHEN COUNT(p.prod_name) = 1
+        		THEN MIN(p.prod_name)
+        		ELSE MIN(p.prod_name) || '외 ' || (COUNT(p.prod_name) - 1) || '건'
+    		END AS prod_name,
+    	o.registration_date,
+    	o.due_date,
+    	   CASE 
+              WHEN NVL(SUM(s.release_quantity), 0) = 0 THEN '등록'
+              WHEN NVL(SUM(s.release_quantity), 0) <![CDATA[<]]> SUM(d.order_quantity) THEN '신청중'
+              ELSE '완료'
+          END AS status 
+	FROM 
+   				orders o JOIN order_detail d 
+              		 ON o.order_code = d.order_code
+             	JOIN prod_common p 
+             		  ON d.prod_code = p.prod_code
+             	JOIN client c 
+               		  ON o.client_code = c.client_code
+                LEFT OUTER JOIN (SELECT order_detail_code, SUM(release_quantity) release_quantity 
+                                 FROM prod_release 
+                                 GROUP BY order_detail_code) s 
+                      ON d.order_detail_code = s.order_detail_code
+  <where>
+  <if test="orderCode != null and orderCode != ''">
+    AND o.order_code LIKE '%'||#{orderCode}||'%'
+  </if>
+  <if test="clientName != null and clientName != ''">
+         AND c.client_name LIKE '%'||#{clientName}||'%'
+  </if>
+  <if test="prodName != null and prodName != ''">
+          AND p.prod_name LIKE '%'||#{prodName}||'%'
+  </if>
+  <if test="orderName != null and orderName != ''">
+         AND o.order_name LIKE '%'||#{orderName}||'%'
+  </if>
+</where>
+	GROUP BY 
+   		 o.order_code, 
+    	 o.order_name,
+    	 c.client_code, 
+    	c.client_name, 
+    	o.registration_date, 
+    	o.due_date
+    ORDER BY status, TO_NUMBER(substr(order_code,7)) DESC
+    </select>
+    <select id="orderCall" resultType="BusinessVO" parameterType="String">
+        SELECT o.order_code,
+       		o.order_name,
+      	    o.emp_code,
+      	    e.emp_name,
+       	    o.registration_date,
+            o.due_date,
+            c.client_code,
+            c.client_name,
+            o.note
+       FROM orders o JOIN client c
+            ON o.client_code= c.client_code
+            JOIN emp e 
+            ON o.emp_code=e.emp_code 
+       WHERE o.order_code=#{orderCode}
+    </select>
+    <select id="orderDetailCall" resultType="BusinessDetailVO" parameterType="String">
+        SELECT o.order_detail_code,
+               o.order_code,
+               o.prod_code,
+               p.prod_name,
+               o.order_quantity,
+               o.order_price
+         FROM order_detail o JOIN prod_common p
+                    ON o.prod_code = p.prod_code
+         WHERE o.order_code=#{orderCode}
+    </select>
+    <!-- 주문코드 자동증가 -->
+      <select id="getOrderNo" resultType="String">
+       SELECT 'ORDER-'||(NVL(MAX(order_num),0) + 1) order_code 
+      FROM (
+       SELECT TO_NUMBER(SUBSTR(order_code, 7)) order_num
+        FROM orders)
+    </select>
+    <!-- 주문상세 자동증가 -->
+     <select id="getOrderDetailNo" resultType="String">
+       SELECT 'ORDER-DETAIL-'||(NVL(MAX(order_num),0) + 1) order_code 
+      FROM (
+       SELECT TO_NUMBER(SUBSTR(order_detail_code, 14)) order_num
+        FROM order_detail)
+    </select>
+    <select id="orderCheck" resultType="int" parameterType="String">
+      SELECT COUNT(order_code)
+      FROM orders
+      WHERE order_code= #{orderCode}
+    </select>
+    <insert id="orderAdd" parameterType="businessVO">
+        INSERT INTO orders(order_code,
+                   order_name,
+                   emp_code,
+                   registration_date,
+                   due_date,
+                   note,
+                   client_code)
+        VALUES(#{orderCode},
+               #{orderName},
+               #{empCode},
+               #{registrationDate},
+               #{dueDate},
+               #{note},
+               #{clientCode}
+               ) 
+    </insert>
+    <insert id="orderDetailAdd" parameterType="BusinessDetailVO">
+    <selectKey keyProperty="orderDetailCode"   
+                    resultType="String"
+                    order="BEFORE">
+                SELECT 'ORDER-DETAIL-'||(NVL(MAX(order_num),0) + 1) AS order_detail_code 
+               FROM (
+                    SELECT TO_NUMBER(SUBSTR(order_detail_code, 14)) AS order_num
+                    FROM order_detail
+               )
+         </selectKey> 
+        INSERT INTO order_detail(order_detail_code,
+                         order_code,
+                         prod_code,
+                         order_quantity,
+                         order_price)
+         VALUES (#{orderDetailCode},
+                 #{orderCode},
+                 #{prodCode},
+                  #{orderQuantity},
+                 #{orderPrice})
+    </insert>
+    <update id="orderUpdate" parameterType="BusinessVO">
+       UPDATE orders
+       SET order_name = #{orderName},
+           client_code = #{clientCode},
+           registration_date = #{registrationDate},
+           due_date = #{dueDate},
+           note = #{note}
+       WHERE order_code = #{orderCode}
+    </update>
+    <update id="orderDetailUpdate" parameterType="BusinessDetailModifyVO">
+      UPDATE order_detail
+      SET prod_code = #{prodCode},
+          order_quantity = #{orderQuantity},
+          order_price = #{orderPrice}
+      WHERE order_detail_code = #{orderDetailCode}
+    </update>
+    <delete id = "orderDetailDelete" parameterType="BusinessDetailDeleteVO">
+       DELETE FROM order_detail
+       WHERE order_detail_code=#{orderDetailCode}
+    </delete>
+    <delete id="orderDelete" parameterType="String">
+      DELETE FROM orders
+       WHERE order_code=#{orderCode}
+    </delete>
+   <delete id="orderDetailDrop" parameterType="String">
+      DELETE FROM order_detail
+       WHERE order_code=#{orderCode}
+    </delete>
+    
+    <!-- 주문조회 페이지 -->
+    <select  id="orderDetailList" parameterType="BusinessDetailVO">
+      SELECT o.order_code,
+              o.order_name,
+              FIND_PROD_NAME(d.prod_code) prod_name,
+              FIND_CLIENT_NAME(o.client_code) client_name,
+              FIND_EMP_NAME(o.emp_code) emp_name,
+              o.registration_date,
+              o.due_date,
+              GET_MES_SUB_CODE_NAME(d.process_status) process_status,
+              d.order_quantity,
+              d.order_quantity-NVL(SUM(p.release_quantity),0) no_send,
+              d.order_price*d.order_quantity total_price
+     FROM orders o LEFT JOIN order_detail d
+                   ON (o.order_code=d.order_code)
+                    LEFT JOIN prod_release p
+                   ON (d.order_detail_code = p.order_detail_code)
+     <where>
+     <if test="orderCode != null and !orderCode.equals('')">
+            AND o.order_code LIKE '%'||#{orderCode}||'%'
+    </if>
+    <if test="orderName != null and !orderName.equals('')">
+            AND o.order_name LIKE '%'||#{orderName}||'%'
+    </if>
+    <if test="prodName != null and !prodName.equals('')">
+            AND FIND_PROD_NAME(d.prod_code) LIKE '%'||#{prodName}||'%'
+    </if>
+    <if test="clientName != null and !clientName.equals('')">
+            AND FIND_CLIENT_NAME(o.client_code) LIKE '%'||#{clientName}||'%'
+    </if>
+    <if test="empName != null and !empName.equals('')">
+            AND FIND_EMP_NAME(o.emp_code) LIKE '%'||#{empName}||'%'
+    </if>
+    <if test="registrationDate2 != null and !registrationDate2.equals('')">
+             AND o.registration_date BETWEEN TO_DATE(#{registrationDate1}, 'YYYY-MM-DD')
+                			      AND TO_DATE(#{registrationDate2}, 'YYYY-MM-DD')
+     </if>
+     <if test="dueDate2 != null and !dueDate2.equals('')">
+             AND o.due_date BETWEEN TO_DATE(#{dueDate1}, 'YYYY-MM-DD')
+                			      AND TO_DATE(#{dueDate2}, 'YYYY-MM-DD')
+     </if>
+    <if test="processStatus != null and !processStatus.equals('')">
+            AND GET_MES_SUB_CODE_NAME(d.process_status) LIKE '%'||#{processStatus}||'%'
+    </if>
+     </where>
+   	 GROUP BY o.order_code,
+              o.order_name,
+              FIND_CLIENT_NAME(o.client_code),
+              FIND_EMP_NAME(o.emp_code),
+              FIND_PROD_NAME(d.prod_code),
+              o.registration_date,
+              d.process_status,
+              o.due_date,
+              d.order_quantity,
+              d.order_price*d.order_quantity
+      ORDER BY d.process_status,o.registration_date DESC
+    </select>
+      <select id="orderManuModal" resultType="orderSimpleVO" parameterType="BusinessVO"> 
+     SELECT 
+        o.order_code,
+    	o.order_name,
+    	c.client_code,
+    	c.client_name,
+    		CASE 
+        		WHEN COUNT(p.prod_name) = 1
+        		THEN MIN(p.prod_name)
+        		ELSE MIN(p.prod_name) || '외 ' || (COUNT(p.prod_name) - 1) || '건'
+    		END AS prod_name,
+    	o.registration_date,
+    	o.due_date,
+    	   CASE WHEN (SELECT count(*) FROM manu_plan WHERE order_code = o.order_code)=0 THEN '요청' 
+    	   		WHEN (SELECT count(*) FROM manu_plan WHERE order_code = o.order_code)>0 THEN '기등록된 주문' 
+    	   END AS status
+	FROM 
+   				orders o JOIN order_detail d 
+              		 ON o.order_code = d.order_code
+             	JOIN prod_common p 
+             		  ON d.prod_code = p.prod_code
+             	JOIN client c 
+               		  ON o.client_code = c.client_code
+                LEFT OUTER JOIN (SELECT order_detail_code, SUM(release_quantity) release_quantity 
+                                 FROM prod_release 
+                                 GROUP BY order_detail_code) s 
+                      ON d.order_detail_code = s.order_detail_code
+  <where>
+  <if test="orderCode != null and orderCode != ''">
+    AND o.order_code LIKE '%'||#{orderCode}||'%'
+  </if>
+  <if test="clientName != null and clientName != ''">
+         AND c.client_name LIKE '%'||#{clientName}||'%'
+  </if>
+  <if test="prodName != null and prodName != ''">
+          AND p.prod_name LIKE '%'||#{prodName}||'%'
+  </if>
+  <if test="orderName != null and orderName != ''">
+         AND o.order_name LIKE '%'||#{orderName}||'%'
+  </if>
+</where>
+	GROUP BY 
+   		 o.order_code, 
+    	 o.order_name,
+    	 c.client_code, 
+    	c.client_name, 
+    	o.registration_date, 
+    	o.due_date
+    ORDER BY status desc, order_code
+    </select>
+    
+    
+   </mapper>

@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="matOrder" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="aec86b5a-5bd4-4fca-91c8-d09cd2fdda31">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="mes"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<style name="mal_style_title" hTextAlign="Center" vTextAlign="Middle" fontName="mal" fontSize="24" isBold="true"/>
+	<style name="mal_style_content" hTextAlign="Center" vTextAlign="Middle" fontName="mal" fontSize="12"/>
+	<style name="mal_style_sub_title" hTextAlign="Center" vTextAlign="Middle" fontName="mal" fontSize="14" isBold="true"/>
+	<style name="Table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_CH" mode="Opaque" backcolor="#A3A3A3">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<subDataset name="mat order detail" uuid="522926f1-e714-4cce-b351-65dccc1c54bc">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="mes"/>
+		<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+		<parameter name="c_mat_order_code" class="java.lang.String"/>
+		<queryString>
+			<![CDATA[SELECT md.mat_order_detail_code "발주상세코드",
+           mat.mat_name 자재명,
+           mat.mat_class 분류,
+           mat.standard 규격,
+           mat.unit 단위,
+           md.client_name 거래처,
+           md.quantity 수량,
+           md.delivery_date 납기일자
+FROM  mat_order_detail md JOIN mat_common mat
+                                          ON (md.mat_code = mat.mat_code)
+WHERE  md.mat_order_code = $P{c_mat_order_code}]]>
+		</queryString>
+		<field name="발주상세코드" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="발주상세코드"/>
+			<property name="com.jaspersoft.studio.field.label" value="발주상세코드"/>
+		</field>
+		<field name="자재명" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="자재명"/>
+			<property name="com.jaspersoft.studio.field.label" value="자재명"/>
+		</field>
+		<field name="분류" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="분류"/>
+			<property name="com.jaspersoft.studio.field.label" value="분류"/>
+		</field>
+		<field name="규격" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="규격"/>
+			<property name="com.jaspersoft.studio.field.label" value="규격"/>
+		</field>
+		<field name="단위" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="단위"/>
+			<property name="com.jaspersoft.studio.field.label" value="단위"/>
+		</field>
+		<field name="거래처" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="거래처"/>
+			<property name="com.jaspersoft.studio.field.label" value="거래처"/>
+		</field>
+		<field name="수량" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="수량"/>
+			<property name="com.jaspersoft.studio.field.label" value="수량"/>
+		</field>
+		<field name="납기일자" class="java.sql.Timestamp">
+			<property name="com.jaspersoft.studio.field.name" value="납기일자"/>
+			<property name="com.jaspersoft.studio.field.label" value="납기일자"/>
+		</field>
+	</subDataset>
+	<parameter name="p_mat_order_code" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT  mat_order_code AS 발주번호,
+            order_name AS 발주명,
+            find_emp_name(emp_code) AS 담당자,
+            order_date AS 등록일자
+FROM   mat_order
+WHERE mat_order_code = $P{p_mat_order_code}]]>
+	</queryString>
+	<field name="발주번호" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="발주번호"/>
+		<property name="com.jaspersoft.studio.field.label" value="발주번호"/>
+	</field>
+	<field name="발주명" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="발주명"/>
+		<property name="com.jaspersoft.studio.field.label" value="발주명"/>
+	</field>
+	<field name="담당자" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="담당자"/>
+		<property name="com.jaspersoft.studio.field.label" value="담당자"/>
+	</field>
+	<field name="등록일자" class="java.sql.Timestamp">
+		<property name="com.jaspersoft.studio.field.name" value="등록일자"/>
+		<property name="com.jaspersoft.studio.field.label" value="등록일자"/>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="59" splitType="Stretch">
+			<textField>
+				<reportElement style="mal_style_title" x="0" y="0" width="555" height="59" uuid="e4c96af6-48c4-4995-b8d5-a30565191e33"/>
+				<box>
+					<pen lineWidth="1.0"/>
+					<topPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="0.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textFieldExpression><![CDATA["자재 발주서"]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="16" splitType="Stretch">
+			<textField pattern="yyyy년 MMMM d일">
+				<reportElement style="mal_style_content" x="0" y="0" width="555" height="16" uuid="36bc49e0-f362-4696-9a72-8f330e7a6fc0"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="43" splitType="Stretch">
+			<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.FreeLayout"/>
+			<textField>
+				<reportElement style="mal_style_sub_title" mode="Opaque" x="0" y="0" width="100" height="20" backcolor="#A3A3A3" uuid="5cbdae9d-5432-4869-97e3-67bc1e4679c5">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textFieldExpression><![CDATA["발주명"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="mal_style_sub_title" mode="Opaque" x="0" y="20" width="100" height="20" backcolor="#A3A3A3" uuid="165e1fee-9ecd-4f7a-8d35-d1b6d8f16e3c">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textFieldExpression><![CDATA["발주번호"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="mal_style_sub_title" x="100" y="0" width="180" height="20" uuid="cb6150f4-c3d7-495d-9ebd-2b89ff6b127a">
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textFieldExpression><![CDATA[$F{발주명}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="mal_style_sub_title" x="100" y="20" width="180" height="20" uuid="3f1c1e10-b4a3-4a79-ae6c-d2efc0de344f">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textFieldExpression><![CDATA[$F{발주번호}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="mal_style_sub_title" mode="Opaque" x="280" y="0" width="100" height="20" backcolor="#A3A3A3" uuid="df928549-ac23-4932-a3e9-16309a35c29b">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textFieldExpression><![CDATA["담당자"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="mal_style_sub_title" mode="Opaque" x="280" y="20" width="100" height="20" backcolor="#A3A3A3" uuid="3f62184e-4558-43ca-9d43-fe854104be4f">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textFieldExpression><![CDATA["등록일자"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="mal_style_sub_title" x="380" y="20" width="174" height="20" uuid="60b28438-0833-49ab-af6e-6ae38dfa0e18">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textFieldExpression><![CDATA[$F{등록일자}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement style="mal_style_sub_title" x="380" y="0" width="174" height="20" uuid="383a13b0-40b7-4cb7-a5cd-a8b8ee28cfd1">
+					<property name="com.jaspersoft.studio.unit.height" value="px"/>
+					<property name="com.jaspersoft.studio.unit.width" value="px"/>
+				</reportElement>
+				<box>
+					<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+					<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+				</box>
+				<textFieldExpression><![CDATA[$F{담당자}]]></textFieldExpression>
+			</textField>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="63" splitType="Stretch">
+			<componentElement>
+				<reportElement x="0" y="0" width="555" height="63" uuid="54417784-1028-456a-9e8c-3a1af16c6ed7">
+					<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+					<property name="com.jaspersoft.studio.table.style.table_header" value="Table_TH"/>
+					<property name="com.jaspersoft.studio.table.style.column_header" value="Table_CH"/>
+					<property name="com.jaspersoft.studio.table.style.detail" value="Table_TD"/>
+				</reportElement>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="mat order detail" uuid="f566eb35-b2c1-4a1c-b2c2-b3b71d8eb2df">
+						<datasetParameter name="c_mat_order_code">
+							<datasetParameterExpression><![CDATA[$P{p_mat_order_code}]]></datasetParameterExpression>
+						</datasetParameter>
+						<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					</datasetRun>
+					<jr:column width="140" uuid="e51a5ab1-6681-4222-bfbc-327ab4efb211">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+						<jr:columnHeader style="mal_style_content" height="30" rowSpan="1">
+							<staticText>
+								<reportElement style="mal_style_content" mode="Opaque" x="0" y="0" width="140" height="30" backcolor="#A1A1A1" uuid="2bfd7e8f-3a65-41f0-8a8d-bb4d24adcb63"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<text><![CDATA[발주상세코드]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement style="mal_style_content" x="0" y="0" width="140" height="30" uuid="b0d61844-c77d-4cee-9933-50d8a66d4cd4"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<textFieldExpression><![CDATA[$F{발주상세코드}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="59" uuid="9662bda9-5fb7-4367-ba80-5debcd81df72">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+						<jr:columnHeader style="mal_style_content" height="30" rowSpan="1">
+							<staticText>
+								<reportElement style="mal_style_content" mode="Opaque" x="0" y="0" width="59" height="30" backcolor="#A1A1A1" uuid="c383f875-c850-4c7c-a918-7a0dd7a8f3f9"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<text><![CDATA[자재명]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement style="mal_style_content" x="0" y="0" width="59" height="30" uuid="d53fd5cf-f289-49a5-a3de-58533c193c40"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<textFieldExpression><![CDATA[$F{자재명}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="41" uuid="70c7b095-14c0-45cc-b72b-8fd5afbc5c22">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column3"/>
+						<jr:columnHeader style="mal_style_content" height="30" rowSpan="1">
+							<staticText>
+								<reportElement style="mal_style_content" mode="Opaque" x="0" y="0" width="41" height="30" backcolor="#A1A1A1" uuid="ccf7e59f-f8b0-42e5-b480-0ef6a8c7783b"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<text><![CDATA[분류]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement style="mal_style_content" x="0" y="0" width="41" height="30" uuid="ef525493-0c1e-47c3-afcb-58ad15ded053"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<textFieldExpression><![CDATA[$F{분류}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="40" uuid="ad6144a9-3fb0-41b7-99db-15d70478b550">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column4"/>
+						<jr:columnHeader style="mal_style_content" height="30" rowSpan="1">
+							<staticText>
+								<reportElement style="mal_style_content" mode="Opaque" x="0" y="0" width="40" height="30" backcolor="#A1A1A1" uuid="f70360a4-50d3-4123-be25-1b8099ca4322"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<text><![CDATA[규격]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement style="mal_style_content" x="0" y="0" width="40" height="30" uuid="ac08a1d5-752f-48f5-8df9-889fc43da718"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<textFieldExpression><![CDATA[$F{규격}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="50" uuid="a153daa1-4ab4-410e-9d8e-242a057c80aa">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column5"/>
+						<jr:columnHeader style="mal_style_content" height="30" rowSpan="1">
+							<staticText>
+								<reportElement style="mal_style_content" mode="Opaque" x="0" y="0" width="50" height="30" backcolor="#A1A1A1" uuid="31535411-66fb-4223-bc6b-2b82d01f2a2e"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<text><![CDATA[단위]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement style="mal_style_content" x="0" y="0" width="50" height="30" uuid="6a42cda5-91e0-4cb7-aa88-6206f5888989"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<textFieldExpression><![CDATA[$F{단위}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="83" uuid="9b5efa44-28f3-4ca5-953e-589fc7e9f317">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column6"/>
+						<jr:columnHeader style="mal_style_content" height="30" rowSpan="1">
+							<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+							<staticText>
+								<reportElement style="mal_style_content" mode="Opaque" x="0" y="0" width="83" height="30" backcolor="#A1A1A1" uuid="10aeeae0-7275-4215-bdf7-59c9a4c8ec93"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<text><![CDATA[거래처]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement style="mal_style_content" x="0" y="0" width="83" height="30" uuid="b7e5b61f-3474-440d-b9c3-8e4c8418333b"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<textFieldExpression><![CDATA[$F{거래처}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="47" uuid="d52f3974-232e-4fba-b84b-f9e6c2bf7937">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column7"/>
+						<jr:columnHeader style="mal_style_content" height="30" rowSpan="1">
+							<staticText>
+								<reportElement style="mal_style_content" mode="Opaque" x="0" y="0" width="47" height="30" backcolor="#A1A1A1" uuid="006a28fe-91ec-4292-8237-7bb7b258a4fb"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<text><![CDATA[수량]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement style="mal_style_content" x="0" y="0" width="47" height="30" uuid="8399a767-c1d5-4d5c-a82a-432c0afd5cc6"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<textFieldExpression><![CDATA[$F{수량}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="95" uuid="3b183115-f901-4acf-8a71-5295ae79778f">
+						<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column8"/>
+						<jr:columnHeader style="mal_style_content" height="30" rowSpan="1">
+							<staticText>
+								<reportElement style="mal_style_content" mode="Opaque" x="0" y="0" width="95" height="30" backcolor="#A1A1A1" uuid="ece54241-f5ea-4670-98f6-83a3b272bf81"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<text><![CDATA[납기일자]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell style="Table_TD" height="30">
+							<textField>
+								<reportElement style="mal_style_content" x="0" y="0" width="95" height="30" uuid="d9af2cee-a49b-4851-8929-17d684c03dea"/>
+								<box>
+									<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+									<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								</box>
+								<textFieldExpression><![CDATA[$F{납기일자}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="21" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="555" height="20" uuid="93f094f9-e0e4-4613-9142-6293bfdd17ca"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

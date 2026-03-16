@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   <mapper namespace="com.aio.mes.main.mapper.MainMapper">
+  <select id="orderChart">    
+  	SELECT 
+    FIND_PROD_NAME(prod_code) AS prod_name,
+    ROUND(SUM(order_quantity) * 100.0 / SUM(SUM(order_quantity)) OVER (), 2) AS percentage
+	FROM 
+  	  order_detail d 
+	JOIN 
+   	 orders o ON d.order_code = o.order_code
+	WHERE 
+   		 REGISTRATION_DATE >= REGISTRATION_DATE-7
+	GROUP BY 
+    	prod_code, FIND_PROD_NAME(prod_code)
+	ORDER BY 
+    	prod_code
+</select>
+<select id="matOrderChart">
+    SELECT FIND_MAT_NAME(mat_code) mat_name,
+       SUM(store_quantity) come
+	FROM mat_store
+	WHERE store_date >= SYSDATE-7
+	GROUP BY FIND_MAT_NAME(mat_code)
+</select>
+<select id="orderLine">
+  	SELECT SUM(d.order_quantity) orderQuantity,
+        TO_CHAR(o.registration_date,'dy')day
+	FROM order_detail d JOIN orders o
+                ON (o.order_code=d.order_code)
+	WHERE o.registration_date >= SYSDATE-7
+	GROUP BY TO_CHAR(o.registration_date,'dy'),TO_CHAR(o.registration_date,'d'),
+             o.registration_date
+	order by o.registration_date 
+</select>
+<select id="workChart">
+   SELECT FIND_PROD_NAME(prod_code),
+       SUM(instruct_quantity)
+	FROM work_instruct_detail
+	GROUP BY FIND_PROD_NAME(prod_code)
+</select>
+<select id="matUsed">
+    SELECT SUM(release_quantity) mat_used,
+        FIND_MAT_NAME(s.mat_code) mat_named
+	FROM mat_release r JOIN mat_hold h
+                 ON(r.mat_hold_code=h.mat_hold_code) 
+                 JOIN mat_store s 
+                 ON(h.lot = s.lot)
+	WHERE r.release_date >= SYSDATE-7               
+	GROUP BY  FIND_MAT_NAME(s.mat_code)
+</select>
+<select id="todayOrder">
+    SELECT COUNT(*)
+	FROM orders
+	WHERE TO_CHAR(registration_date,'yyyyMMdd') = TO_char(sysdate,'yyyyMMdd')
+</select>
+<select id="todayMatRequired">
+    SELECT COUNT(*)
+	FROM mat_order
+	WHERE TO_CHAR(order_date,'yyyyMMdd') = TO_char(sysdate,'yyyyMMdd')
+</select>
+<select id="todayStore">
+    SELECT COUNT(*)
+	FROM prod_store
+	WHERE TO_CHAR(store_date,'yyyyMMdd') = TO_char(sysdate,'yyyyMMdd')
+</select>
+<select id="todayRelease">
+    SELECT COUNT(DISTINCT order_code)
+	FROM prod_release
+	WHERE TO_CHAR(release_date,'yyyyMMdd') = TO_char(sysdate,'yyyyMMdd')
+</select>
+</mapper>

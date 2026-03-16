@@ -1,0 +1,40 @@
+.kiosk .header-div{
+	text-align: right;
+}
+.kiosk div #go-back,#go-home{
+	background-color: transparent;
+	border:none;
+}
+.input-div-parent{
+	display: flex;
+	justify-content: center;
+}
+.input-grid-div,.input-button-div{
+	width: 50%;
+}
+.input-grid-div button{
+	float: right;
+	margin-bottom: 10px;
+}
+.input-button-div{
+	display: flex;
+	justify-content: center;
+}
+.input-button-div button{
+	margin: 10px;
+	font-size: 50px;
+	font-style: bold;
+	width: 40%;
+}
+
+.modal-header{
+	display: flex;
+	justify-content: right;
+}
+.modal-body{
+	text-align: center;	
+}
+
+.btn-group-vertical{
+	width: 80%;
+}

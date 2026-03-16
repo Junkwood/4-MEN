@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/default_layout}"
+      layout:fragment="Content">      
+<link th:href="@{/css/matmanagement.css}" rel="stylesheet">
+	<body>
+		<!-- 발주 등록 수정 삭제 -->
+		<div class="container">
+		<p class="h1">발주 관리</p>
+      	<nav class="order-nav">
+			<button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#search-MatOrder-Modal">조회</button>
+	      	<input type='button' class="btn btn-outline-primary" id="main-top-need-supply-btn" value="과부족 현황">
+	      	<input type='button' class="btn btn-outline-primary" id="main-top-create-btn" value="발주등록">
+	      	<input type='button' class="btn btn-outline-success" id="main-top-save-btn" value="저장">
+	      	<input type='button' class="btn btn-outline-danger" id="main-top-delete-btn" value="삭제">
+	      	<input type='button' class="btn btn-outline-warning" id="main-top-init-btn" value="초기화">
+	      	<input type='button' class="btn btn-outline-info" id="main-top-print-pdf-btn" value="PDF">
+	      	<input type='button' class="btn btn-outline-info" id="main-top-print-csv-btn" value="CSV">
+	      	<input type='button' class="btn btn-outline-info" id="main-top-print-xlsx-btn" value="XLSX">
+      	</nav>
+      	
+      	<div id="grid-main-top"></div>
+      	
+      	<br>
+      	
+      	<p class="h1">발주 상세</p>
+      	<nav class="order-nav">
+      		<input type='button' class="btn btn-outline-success" id="main-bottom-add-btn" value="╆">
+      		<input type='button' class="btn btn-outline-danger" id="main-bottom-drop-btn" value="ㅡ">
+      	</nav>
+      	
+      	<div id="grid-main-bottom"></div>   		
+      </div>
+
+   		<!-- 발주 찾기 모달 -->
+		<div class="modal fade" id="search-MatOrder-Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		  <div class="modal-dialog modal-dialog-centered modal-lg">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h1 class="modal-title fs-4 order-search-title" id="exampleModalLabel">발주 간단 조회</h1>
+		        
+		        <div class="order-search-nav">
+		        	<div class="form-check form-check-inline">
+					  <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" value="orderName" checked>
+					  <label class="form-check-label" for="flexRadioDefault1">
+					    발주명
+					  </label>
+					</div>
+					<div class="form-check form-check-inline">
+					  <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2" value="empName">
+					  <label class="form-check-label" for="flexRadioDefault2">
+					    요청자명
+					  </label>
+					</div>
+					
+					
+					<select class="form-select order-select" id="modal-select" aria-label="Default select example">
+					  <option value="ALL" selected>전체</option>
+					  <option value="PS1">요청</option>
+					  <option value="PS2">처리중</option>
+					  <option value="PS3">처리완료</option>
+					</select>
+				    <input class="form-control me-2 order-search" id="modal-search-matOrder-input" type="search" placeholder="키워드" aria-label="Search">
+				    <button class="btn btn-outline-success" id="modal-matOrder-search-btn" type="submit">검색</button>
+		        </div>
+
+		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+		      </div>
+		      <div class="modal-body">
+		      	<div id="grid-modal-matOrder"></div>
+		      </div>
+		      <div class="modal-footer">
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		
+		<!-- 자재 과부족 목록 모달 -->
+		<div class="modal fade" id="search-need-supply-Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		  <div class="modal-dialog modal-dialog-centered modal-lg">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h1 class="modal-title fs-4 order-need-supply-title" id="exampleModalLabel">자재 과부족 현황</h1>
+		        
+		        <div class="mat-search-nav">
+				    <input class="form-control me-2 order-search" id="modal-search-need-supply-mat-input" type="search" placeholder="Search" aria-label="Search">
+				    <button class="btn btn-outline-success" id="modal-need-supply-mat-search-btn" type="submit">검색</button>
+		        </div>
+
+		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+		      </div>
+		      <div class="modal-body">
+		      	<div id="grid-modal-need-supply"></div>
+		      </div>
+		      <div class="modal-footer">
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		
+		<!-- 자재 선택 모달 -->
+		<div class="modal fade" id="search-Mat-Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		  <div class="modal-dialog modal-dialog-centered modal-lg">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h1 class="modal-title fs-4 order-search-title" id="exampleModalLabel">자재 선택</h1>
+		        
+		        <div class="mat-search-nav">
+				    <input class="form-control me-2 order-search" id="modal-search-mat-input" type="search" placeholder="Search" aria-label="Search">
+				    <button class="btn btn-outline-success" id="modal-mat-search-btn" type="submit">검색</button>
+		        </div>
+
+		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+		      </div>
+		      <div class="modal-body">
+		      	<div id="grid-modal-mat"></div>
+		      </div>
+		      <div class="modal-footer">
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		
+		<!-- 거래처 선택 모달 -->
+		<div class="modal fade" id="search-client-Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		  <div class="modal-dialog modal-dialog-centered modal-lg">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <h1 class="modal-title fs-4 order-search-title" id="exampleModalLabel">거래처 선택</h1>
+		        
+		        <div class="mat-search-nav">
+				    <input class="form-control me-2 order-search" id="modal-search-client-input" type="search" placeholder="Search" aria-label="Search">
+				    <button class="btn btn-outline-success" id="modal-client-search-btn" type="submit">검색</button>
+		        </div>
+
+		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+		      </div>
+		      <div class="modal-body">
+		      	<div id="grid-modal-client"></div>
+		      </div>
+		      <div class="modal-footer">
+		      </div>
+		    </div>
+		  </div>
+		</div>
+	</body>
+	
+	<script th:inline="javascript">
+	//발주 생성 건의 경우, 발주 등록 누를 때 마다 
+	//메인상단그리드의 rowKey별로 발주 상세 정보를 임시로 가지고 있어야한다.
+	let creativeOrderList = []; //예 : creativeOrderList[0] = [];
+	let currentSelectedrowKey = -1; //신규 발주 정보 클릭 시마다 rowKey담아두는 변수
+	let selectedMatData = null;
+	let selectedClientData = null;
+	let warningCheck = 0;
+	let sessionEmpCode =[[${#authentication.principal.empCode}]];
+	let sessionEmpName =[[${#authentication.principal.empName}]];
+	const token = $("meta[name='_csrf']").attr("content")
+	const header = $("meta[name='_csrf_header']").attr("content");
+	
+	//모달창 검색 태그 값 캐싱
+	let matSupplyNeedInputVal = $('#modal-search-need-supply-mat-input');
+	let radioVal = $('input:radio[name="flexRadioDefault"]');
+	let selectVal = $('#modal-select');
+	let matOrderInputVal = $('#modal-search-matOrder-input');
+	let matCommonInputVal = $('#modal-search-mat-input');
+	let clientInputVal = $('#modal-search-client-input');
+	
+	//메인 상단 그리드 생성
+	const gridMainTop = new tui.Grid({
+		el: document.getElementById('grid-main-top'),
+		scrollX: false,
+		scrollY: false,
+		pageOptions: {
+            perPage: 5,
+            useClient: true,
+        },
+		columns: [
+			{
+				header: '발주코드',
+				name: 'matOrderCode',
+				align: 'center'
+			},
+			{
+				header: '발주명:',
+				name: 'orderName',
+				align: 'left',
+				editor: 'text'
+			},
+			{
+				header: '발주일자:',
+				name: 'orderDate',
+				editor: 'datePicker',
+				align:'center'
+			},
+			{
+				header: '요청자명:',
+				align: 'center',
+				name: 'empName',
+			},
+			{
+				header: '요청상태',
+				name: 'orderStatus',
+				align: 'center',
+				renderer:{
+	            	  styles:{
+	            		  backgroundColor:(props) => props.value == '요청'?  'rgba(252, 240, 3)' 
+	            		  : props.value == '처리중'?  'rgba(252, 3, 45)' 	  
+	            		  : props.value == '처리완료'?  'rgba(3, 252, 65)':'',
+	            		fontSize :'15px',
+	            	    fontFamily: 'Malgun Gothic',
+	            	    fontWeight: 'bold'
+	            	  }
+	            }
+			}
+		]
+	});
+	//메인 하단 그리드 생성
+	const gridMainBottom = new tui.Grid({
+		el: document.getElementById('grid-main-bottom'),
+		scrollX: false,
+		scrollY: false,
+		rowHeaders: [ 'checkbox' ],
+		pageOptions: {
+            perPage: 5,
+            useClient: true,
+        },
+		columns: [
+			{
+				header: '자재코드',
+				name: 'matCode',
+				align: 'center'
+			},
+			{
+				header: '분류',
+				name: 'matClass',
+				align: 'center'
+			},
+			{
+				header: '자재명',
+				name: 'matName',
+				align: 'left'
+			},
+			{
+				header: '규격',
+				name: 'standard',
+				align: 'center'
+			},
+			{
+				header: '단위',
+				name: 'unit',
+				align: 'center'
+			},
+			{
+				header: '업체명',
+				name: 'clientName',
+				align: 'left'
+			},
+			{
+				header: '납기일자:',
+				name: 'deliveryDate',
+				editor: 'datePicker',
+				align: 'center'
+			},
+			{
+				header: '수량:',
+				name: 'quantity',
+				editor: 'text',
+				validation: {dataType: 'number' },
+				align: 'right',
+			},
+			{
+				header: '기납기량',
+				name: 'testQuantity',
+				align: 'right',
+			}
+		]
+	});
+	
+	//tui 그리드 커서 포인터 적용
+	$('.tui-grid-body-container').css("cursor","pointer");
+	
+	const bottomOptions = {
+			  includeHiddenColumns: true,
+			  onlySelected: false,
+			  fileName: '자재발주 상세 정보',
+			};
+	const topOptions = {
+			  includeHiddenColumns: true,
+			  onlySelected: false,
+			  fileName: '자재 발주 정보',
+			};
+	
+	$('#main-top-print-xlsx-btn').on('click', function(){
+		gridMainTop.export('xlsx', topOptions);
+		gridMainBottom.export('xlsx', bottomOptions);
+	});
+	$('#main-top-print-csv-btn').on('click', function(){
+		gridMainTop.export('csv', topOptions);
+		gridMainBottom.export('csv', bottomOptions);
+	});
+	
+	//발주 조회 모달 그리드 생성
+	const matOrderModalGrid = new tui.Grid({
+			el: document.getElementById('grid-modal-matOrder'),
+			scrollX: false,
+			scrollY: false,
+			pageOptions: {
+	            perPage: 5,
+	            useClient: true,
+	        },
+			columns: [
+				{
+					header: '발주코드',
+					name: 'matOrderCode',
+					sortable: true,
+					filter: 'text',
+					rowSpan: true,
+					align: 'center',
+				},
+				{
+					header: '발주명',
+					name: 'orderName',
+					align: 'left'
+				},
+				{
+					header: '발주일자',
+					name: 'orderDate',
+					align: 'center'
+				},
+				{
+					header: '요청자명',
+					name: 'empName',
+					align: 'center'
+				},
+				{
+					header: '요청상태',
+					name: 'orderStatus',
+					align: 'center',
+					renderer:{
+		            	  styles:{
+		            		  backgroundColor:(props) => props.value == '요청'?  'rgba(252, 240, 3)' 
+		            		  : props.value == '처리중'?  'rgba(252, 3, 45)' 	  
+		            		  : props.value == '처리완료'?  'rgba(3, 252, 65)':'',
+		            		fontSize :'15px',
+		            	    fontFamily: 'Malgun Gothic',
+		            	    fontWeight: 'bold'
+		            	  }
+		            }
+				}
+			]
+	});
+	
+	$('#main-top-print-pdf-btn').on('click', function(){
+		let gridData = gridMainTop.getData();
+		for(let data of gridData){
+			if(data.matOrderCode == null){
+				toastr.error("출력할 자재 발주 코드를 찾을 수 없습니다.");
+				return;
+			}
+			location.href=`/mat/downloadFile?matOrderCode=${data.matOrderCode}`;
+		}
+	});
+	//자재 과부족 조회 모달 그리드 생성
+	const matNeedSupplyGrid = new tui.Grid({
+			el: document.getElementById('grid-modal-need-supply'),
+			scrollX: false,
+			scrollY: false,
+			pageOptions: {
+	            perPage: 5,
+	            useClient: true,
+	        },
+			columns: [
+				{
+					header: '자재명',
+					name: 'matName',
+					align: 'left'
+				},
+				{
+					header: '안전재고',
+					name: 'safetystock',
+					align: 'right'
+				},
+				{
+					header: '안전재고 대비 과부족',
+					name: 'safetyStockPerQuantity',
+					align: 'right'
+				},
+				{
+					header: '생산 계획 대비 과부족',
+					name: 'manuPlanPerQuantity',
+					align: 'right'
+				},
+			]
+	});
+	
+	
+	//자재 조회 모달 그리드 생성
+	const matModalGrid = new tui.Grid({
+			el: document.getElementById('grid-modal-mat'),
+			scrollX: false,
+			scrollY: false,
+			pageOptions: {
+	            perPage: 5,
+	            useClient: true,
+	        },
+			columns: [
+				{
+					header: '자재명',
+					name: 'matName',
+					align: 'left'
+				}
+			]
+	});
+	
+	//거래처 조회 모달 그리드 생성
+	const clientModalGrid = new tui.Grid({
+			el: document.getElementById('grid-modal-client'),
+			scrollX: false,
+			scrollY: false,
+			pageOptions: {
+	            perPage: 5,
+	            useClient: true,
+	        },
+			columns: [
+				{
+					header: '거래처명',
+					name: 'clientName',
+					align: 'left'
+				}
+			]
+	});
+
+	//메인 상단 그리드 클릭 이벤트 지정
+	gridMainTop.on('click', (ev) => {
+		if(ev.rowKey != null){
+			let id = gridMainTop.getValue(ev.rowKey, 'matOrderCode');
+			
+			if(id != null){
+				//기존 건의 경우 해당 건에 대한 정보 최신화하기
+				let selectedRowData = getMatOrderDetailsData(id);
+				gridMainBottom.resetData(selectedRowData != null ? selectedRowData : []);			
+			} else{
+				//신규 건의 경우 클릭한 cell의 rowKey에 해당되는 creativeOrderList 정보 가져와서 보여주기
+				currentSelectedrowKey = ev.rowKey;
+				let data = creativeOrderList[ev.rowKey];
+				gridMainBottom.resetData(data != null ? data : []);			
+			}
+				
+			//화면에 렌더링	
+			gridMainBottom.refreshLayout();
+		}
+	});
+	
+	//메인 하단 그리드 값 변경 이벤트 지정
+	gridMainBottom.on('afterChange', (ev) => {
+		//신규 건의 경우, 임시 저장 리스트에 저장
+		if(currentSelectedrowKey > -1){
+			creativeOrderList[currentSelectedrowKey] = gridMainBottom.getData();
+		}
+	});
+	
+	//과부족 현황 버튼 클릭 시 이벤트 지정
+	$('#main-top-need-supply-btn').on('click', function(){
+		$('#search-need-supply-Modal').modal('show');	
+	});
+	
+	//과부족 현황 모달 켜질 때 마다 실행될 이벤트 지정
+	$('#search-need-supply-Modal').on('shown.bs.modal', function(){
+		clickMatSupplyNeedButton();
+	});
+	
+	//과부족 현황 모달 꺼질 때 마다 실행될 이벤트 지정
+	$('#search-need-supply-Modal').on('hidden.bs.modal', function(){
+		matSupplyNeedInputVal.val('');
+		
+		matNeedSupplyGrid.resetData([]);
+		matNeedSupplyGrid.refreshLayout();
+	});
+	
+
+	
+	//과부족 조회 모달 검색 버튼 이벤트 함수
+	$('#modal-need-supply-mat-search-btn').on('click', function(){
+		clickMatSupplyNeedButton();
+	});
+	$('#modal-search-need-supply-mat-input').keyup(function(e){
+		if(e.keyCode == 13){
+			clickMatSupplyNeedButton();
+		}
+	});
+	function clickMatSupplyNeedButton(){
+		let data = getNeedSupplyMatData(matSupplyNeedInputVal.val());
+		matNeedSupplyGrid.resetData(data != null ? data : []);
+		matNeedSupplyGrid.refreshLayout();
+	}
+	
+	//발주 조회 모달 그리드 이벤트 지정
+	matOrderModalGrid.on('click', (ev) => {
+		let id = matOrderModalGrid.getValue(ev.rowKey, 'matOrderCode');
+		
+		//메인 그리드에 조회한 발주 정보 디스플레이(NULL체크 필요)
+		if (id != null){
+			//기존에 작업하던 건이 있다면 경고창을 통해 변경 작업 한번 막아주기
+			let currentTask = gridMainTop.getData();
+			if(currentTask != null && currentTask.length > 0 && warningCheck < 1){
+				warningCheck++;
+				toastr.warning('저장되지 않은 작업 사항이 있습니다. 계속하시려면 한번 더 눌러주세요.');
+				return;
+			}
+			
+			warningCheck = 0;
+			
+			let selectedRowData = [];
+			let matOrderDetailsData = getMatOrderDetailsData(id);
+			
+			for(let data of matOrderModalGrid.getData()){
+				if (id == data.matOrderCode){
+					selectedRowData.push(data);
+					break;
+				}
+			}
+			if (selectedRowData != null){
+				//단건정보
+				gridMainTop.resetData(selectedRowData);
+				gridMainTop.refreshLayout();
+				
+				//상세정보(있으면 띄우기)
+				matOrderDetailsData != null ? gridMainBottom.resetData(matOrderDetailsData) : gridMainBottom.resetData([]);
+				gridMainBottom.refreshLayout();
+				
+				//신규 등록 건 데이터 초기화
+				let creativeOrderList = [];
+				let currentSelectedrowKey = -1;
+			}
+			
+			//모달 닫기
+			$('#search-MatOrder-Modal').modal('hide');
+		}
+	});
+	
+	//자재 조회 모달 그리드 이벤트 지정
+	matModalGrid.on('click', (ev) => {
+		selectedMatData = matModalGrid.getRow(ev.rowKey);
+	
+		if (selectedMatData != null){
+			//자재 조회 모달 닫기
+			$('#search-Mat-Modal').modal('hide');
+			
+			//거래처 선택 모달 켜기
+			$('#search-client-Modal').modal('show');	
+		}
+	});
+	
+	//거래처 조회 모달 그리드 이벤트 지정
+	clientModalGrid.on('click', (ev) => {
+		selectedClientData = clientModalGrid.getRow(ev.rowKey);
+		
+		if(selectedClientData != null){
+			
+			//appendRow시켜서 셀값 넣기
+			let rowKey = gridMainBottom.prependRow();
+			
+			let gridMainBottomData = gridMainBottom.getData();
+			let createdRowKey = gridMainBottomData[0].rowKey; 
+			
+			gridMainBottom.setValue(createdRowKey, 'matCode', selectedMatData.matCode);
+			gridMainBottom.setValue(createdRowKey, 'matClass', selectedMatData.matClass);
+			gridMainBottom.setValue(createdRowKey, 'matName', selectedMatData.matName);
+			gridMainBottom.setValue(createdRowKey, 'standard', selectedMatData.standard);
+			gridMainBottom.setValue(createdRowKey, 'unit', selectedMatData.unit);
+			gridMainBottom.setValue(createdRowKey, 'clientName', selectedClientData.clientName);
+			
+			gridMainBottom.refreshLayout();
+
+			$('#search-client-Modal').modal('hide');
+			
+			selectedMatData = null;
+			selectedClientData = null;
+			
+			//신규 건의 경우, 임시 저장 리스트에 저장
+			if(currentSelectedrowKey > -1){
+				creativeOrderList[currentSelectedrowKey] = gridMainBottom.getData();
+			}
+		}
+	});
+	
+	//발주 등록 버튼 클릭 시 이벤트 지정
+	$('#main-top-create-btn').on('click', function(){
+		//ajax : 기존 건 수정인지 새로운 건 추가인지 확인 ? 기존 건 수정이라면 경고 창 띄우게 하기 : 새로운 건 추가라면 appendRow()
+		let currentTask;
+		$.ajax({
+			url: '/checkMatOrderTypeAjax',
+			method: 'POST',
+			contentType : 'application/json',
+			data: JSON.stringify(gridMainTop.getData()),
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(data){
+				currentTask = data;
+			},
+			error: function(error){
+				console.log(error);
+			}
+		});
+		
+		if(currentTask == 'isCreationTask'){
+			gridMainTop.appendRow();
+			
+			//작성자 정보 추가
+			let currentData = gridMainTop.getData();
+			let rowKey = currentData[currentData.length - 1].rowKey;
+			gridMainTop.setValue(rowKey, 'empName', sessionEmpName);
+		} else {
+			toastr.error('아직 변경사항을 저장하지 않았습니다.');	
+		}
+	});
+	//저장 버튼 클릭 시 이벤트 지정
+	$('#main-top-save-btn').on('click', function(){
+		//validation Check
+		
+		//기존건인지 판별
+		let matOrderData = gridMainTop.getData();
+		let isNewOrder = true;
+		for(let data of matOrderData){
+			if(data.matOrderCode != null){
+				isNewOrder = false;
+				break;
+			}
+		}
+		
+		//기존건 처리
+		let result;
+		if(isNewOrder == false){
+			//기존건의 경우 해당 발주의 요청 상태 확인
+			for(let data of matOrderData){
+				if(data.orderStatus != '요청'){
+					toastr.error('요청 상태가 아닌 발주는 수정 및 삭제가 불가합니다.');
+					return;
+				}
+			}
+			result = savePrevMatOrderData();
+			
+			for(let msg of result){
+				toastr.success(msg);
+			}
+		} else {	
+			//신규 등록건 처리
+			if(creativeOrderList.length > 0){
+				result = saveNewMatOrderData();	
+				
+				for(let msg of result){
+					toastr.success(msg);
+				}
+			} else {
+				toastr.warning('등록될 상세 발주 정보가 비어 있습니다.');
+			}
+		}
+		
+		initializeData();
+	});
+	//초기화 버튼 클릭 시 이벤트 지정
+	$('#main-top-init-btn').on('click', function(){
+		initializeData();
+	});
+	//삭제 버튼 클릭 시 이벤트 지정
+	$('#main-top-delete-btn').on('click', function(){
+		let currentData = gridMainTop.getData();
+		
+		let result = {};
+		for(let data of currentData){
+			if(data.matOrderCode != null){
+				//발주의 요청 상태 파악
+				if(data.orderStatus != '요청'){
+					toastr.error('요청 상태가 아닌 발주는 수정 및 삭제가 불가합니다.');
+					return;
+				}
+				result = removeMatOrder(data.matOrderCode);
+				
+				toastr.success(result);
+				initializeData();
+			}
+		}
+	});
+	
+	//발주 상세 정보 추가 버튼 클릭 시 이벤트 지정
+	$('#main-bottom-add-btn').on('click', function(){
+		//상단 발주 정보가 비어있다면(기존건x, 등록건x) 바로 return
+		if(gridMainTop.getRowCount() < 1){
+			toastr.error('자재를 기입할 발주 정보가 없습니다.');
+			return;
+		}
+		
+		//상단 발주 정보 중 기존건이 있다면 모달 띄워주고 return(기존건의 경우, 모든 transaction은 저장 버튼 클릭 시 이루어진다.)
+		let currentData = gridMainTop.getData();
+		for(let data of currentData){
+			if (data.matOrderCode != null){
+				$('#search-Mat-Modal').modal('show');
+				return;
+			}
+		}
+		
+		//여기까지 넘어온건 등록건이기 때문에, 현재 선택된 등록건 rowKey가 있는지 확인하고, 있다면 모달띄우기
+		currentSelectedrowKey < 0 ? toastr.error('신규 등록 건의 경우, 먼저 상단에 자재를 추가할 발주를 선택해주세요.') : $('#search-Mat-Modal').modal('show');
+	});
+	//발주 상세 정보 빼기 버튼 클릭 시 이벤트 지정
+	$('#main-bottom-drop-btn').on('click', function(){
+		//신규 등록건인지 확인
+		let matOrderData = gridMainTop.getData();
+		let isCreativeTask = true;
+		for(let data of matOrderData){
+			if(data.matOrderCode != null){
+				isCreativeTask = false;
+				break;
+			}
+		}
+		
+		gridMainBottom.removeCheckedRows();
+		
+		if(isCreativeTask){
+			if(currentSelectedrowKey < 0){
+				toastr.error('삭제 할 발주 정보가 선택되지 않았습니다.');
+				return;
+			}
+			creativeOrderList[currentSelectedrowKey] = gridMainBottom.getData();
+		}
+	});
+	
+	//발주 조회 모달 켜질 때 마다 실행될 이벤트 지정
+	$('#search-MatOrder-Modal').on('shown.bs.modal', function(){
+		let data = getMatOrdersData();
+		matOrderModalGrid.resetData(data);
+		matOrderModalGrid.refreshLayout();
+	});
+	
+	//발주 조회 모달 꺼질 때 마다 실행될 이벤트 지정
+	$('#search-MatOrder-Modal').on('hidden.bs.modal', function(){
+		radioVal.removeAttr('checked');
+		radioVal[0].checked = true; //Radio 값 초기화
+		
+		selectVal.val("ALL").attr("selected", "selected"); //select값 초기화
+		matOrderInputVal.val('');
+		
+		matOrderModalGrid.resetData([]);
+		matOrderModalGrid.refreshLayout();
+	});
+	
+	//발주 조회 모달 검색 버튼 이벤트 함수
+	$('#modal-matOrder-search-btn').on('click', function(){
+		clickMatOrderSearchButton();
+	});
+	$('#modal-search-matOrder-input').keyup(function(e){
+		if(e.keyCode == 13){
+			clickMatOrderSearchButton();
+		}
+	});
+	
+	//발주 조회 검색 버튼 이벤트 함수
+	function clickMatOrderSearchButton(){
+		//radio checked값 가져오기
+		let radioData = $('input:radio[name="flexRadioDefault"]:checked').val();
+		
+		//select selected 값 가져오기
+		let selectData = $('#modal-select option:selected').val();
+		
+		//현재 검색창의 입력값 가져오기
+		let inputData = matOrderInputVal.val();
+		
+		let data = {
+				radioVal : radioData,
+				selectVal : selectData,
+				inputVal : inputData
+		};
+		
+		//데이터 조회하기
+		let foundData = searchMatOrdersData(data);
+		matOrderModalGrid.resetData(foundData != null ? foundData : []);
+		matOrderModalGrid.refreshLayout();
+	}
+	
+	//자재 조회 모달 켜질 때 마다 실행될 이벤트 지정
+	$('#search-Mat-Modal').on('shown.bs.modal', function(){
+		let data = getMatCommonsData();
+		matModalGrid.resetData(data);
+		matModalGrid.refreshLayout();
+	});
+	
+	//자재 조회 모달 꺼질 때 마다 실행될 이벤트 지정
+	$('#search-Mat-Modal').on('hidden.bs.modal', function(){
+		matCommonInputVal.val('');
+		
+		matModalGrid.resetData([]);
+		matModalGrid.refreshLayout();
+	});
+	
+	//자재 조회 모달 검색 버튼 이벤트 함수
+	$('#modal-mat-search-btn').on('click',function(){
+		clickMatSearchButton();
+	});
+	$('#modal-search-mat-input').keyup(function(e){
+		if(e.keyCode == 13){
+			clickMatSearchButton();
+		}
+	});
+	
+	function clickMatSearchButton(){
+		//현재 검색창의 입력값 가져오기
+		let inputData = matCommonInputVal.val();
+		
+		let data = {
+				matName : inputData
+		};
+		
+		//데이터 조회하기
+		let foundData = searchMatData(data);
+		matModalGrid.resetData(foundData != null ? foundData : []);
+		matModalGrid.refreshLayout();
+	}
+	//거래처 조회 모달 켜질 때 마다 실행될 이벤트 지정
+	$('#search-client-Modal').on('shown.bs.modal', function(){
+		let data = getClientData();
+		clientModalGrid.resetData(data);
+		clientModalGrid.refreshLayout();
+	});
+	
+	//거래처 조회 모달 꺼질 때 마다 실행될 이벤트 지정
+	$('#search-client-Modal').on('hidden.bs.modal', function(){
+		clientInputVal.val('');
+		
+		clientModalGrid.resetData([]);
+		clientModalGrid.refreshLayout();
+	});
+	
+	//거래처 조회 모달 검색 버튼 이벤트 함수
+	$('#modal-client-search-btn').on('click', function(){
+		clickClientSearchButton();
+	});
+	$('#modal-search-client-input').keyup(function(e){
+		if(e.keyCode == 13){
+			clickClientSearchButton();
+		}
+	});
+	function clickClientSearchButton(){
+		//현재 검색창의 입력값 가져오기
+		let inputData = clientInputVal.val();
+		
+		let data = {
+				clientName : inputData
+		};
+		
+		//데이터 조회하기
+		let foundData = searchClientData(data);
+		clientModalGrid.resetData(foundData != null ? foundData : []);
+		clientModalGrid.refreshLayout();
+	}
+	
+	//초기화 함수
+	function initializeData(){
+		creativeOrderList = [];
+		currentSelectedrowKey = -1;
+		selectedMatData = null;
+		selectedClientData = null;
+		warningCheck = 0;
+		
+		gridMainTop.resetData([]);
+		gridMainBottom.resetData([]);
+		
+		gridMainTop.refreshLayout();
+		gridMainBottom.refreshLayout();
+	}
+	
+	//발주 조회 모달창 데이터 가져오기
+	function getMatOrdersData(){
+		let result;
+		$.ajax({
+			url: '/matOrderListAjax',
+			method: 'GET',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(data){
+				result = data;
+			},
+			error: function(error){
+				toastr.error('자재 발주 조회 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	};
+	//발주 조회 모달창 데이터 조회하기
+	function searchMatOrdersData(data){
+		let result;
+		$.ajax({
+			url: '/matOrderListAjax',
+			method: 'POST',
+			data: data,
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(data){
+				data.length > 0 ? result = data : toastr.error('조회된 데이터가 없습니다.');
+			},
+			error: function(error){
+				toastr.error('자재 발주 검색 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//자재 조회 모달창 데이터 가져오기
+	function getMatCommonsData(){
+		let result;
+		$.ajax({
+			url: '/matCommonListAjax',
+			method: 'GET',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(data){
+				result = data;
+			},
+			error: function(error){
+				toastr.error('자재 조회 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	};
+	//자재 조회 모달창 데이터 조회하기
+	function searchMatData(data){
+		let result;
+		$.ajax({
+			url: '/matCommonListAjax',
+			method: 'POST',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			data: data,
+			async: false,
+			success: function(data){
+				data.length > 0 ? result = data : toastr.error('조회된 데이터가 없습니다.');
+			},
+			error: function(error){
+				toastr.error('자재 검색 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//거래처 조회 모달창 데이터 가져오기
+	function getClientData(){
+		let result;
+		$.ajax({
+			url: '/clientListAjax',
+			method: 'GET',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(data){
+				result = data;
+			},
+			error: function(error){
+				toastr.error('거래처 조회 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	};
+	//거래처 조회 모달창 데이터 조회하기
+	function searchClientData(data){
+		let result;
+		$.ajax({
+			url: '/clientListAjax',
+			method: 'POST',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			data: data,
+			async: false,
+			success: function(res){
+				res.length > 0 ? result = res : toastr.error('조회된 데이터가 없습니다.');
+			},
+			error: function(error){
+				toastr.error('거래처 검색 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	};
+	//기존건 수정 작업 저장하기
+	function savePrevMatOrderData(){	
+		let result;
+		$.ajax({
+			url: '/modifyMatOrderAjax',
+			method: 'POST',
+			data: JSON.stringify({
+				matOrderRows : gridMainTop.getData(),
+				createdRows : gridMainBottom.getModifiedRows().createdRows,
+				deletedRows : gridMainBottom.getModifiedRows().deletedRows,
+				updatedRows : gridMainBottom.getModifiedRows().updatedRows
+			}),
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			contentType : "application/json",
+			async: false,
+			success: function(res){
+				result = res;
+			},
+			error: function(error){
+				toastr.error('기존 건 수정 작업 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	};
+	//신규건 작업 저장하기
+	function saveNewMatOrderData(){
+		let result;
+		
+		let matOrderRowsData = gridMainTop.getData();
+		
+		for(let data of matOrderRowsData){
+			data.empCode = sessionEmpCode;
+		}
+		
+		$.ajax({
+			url: '/saveNewMatOrderAjax',
+			method: 'POST',
+			data: JSON.stringify({
+				matOrderRows : matOrderRowsData,
+				creativeMatOrderRows : creativeOrderList
+			}),
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			contentType : "application/json",
+			async: false,
+			success: function(res){
+				result = res;
+			},
+			error: function(error){
+				toastr.error('기존 건 저장 작업 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//자재 발주 정보 삭제
+	function removeMatOrder(data){
+		let result;
+		$.ajax({
+			url: '/matOrder/' + data,
+			method: 'DELETE',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(res){
+				result = res;
+			},
+			error: function(error){
+				toastr.error('기존 건 삭제 작업 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//발주 상세 데이터 가져오기
+	function getMatOrderDetailsData(matOrderCode){
+		let result;
+		$.ajax({
+			url: '/matOrderDetailListAjax',
+			method: 'POST',
+			data: {matOrderCode}, // {'matOrderCode' : matOrderCode }
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(data){
+				data.length > 0 ? result = data : toastr.error('선택하신 발주의 상세 정보를 찾을 수 없습니다.');
+			},
+			error: function(error){
+				toastr.error('발주 상세 정보 검색 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//과부족 현황 데이터 가져오기
+	function getNeedSupplyMatData(data){
+		let result;
+		
+		$.ajax({
+			url: '/needSupplyMatListAjax',
+			data: {
+				keyword: data
+			},
+			method: 'GET',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(res){
+				res != null && res.length > 0 ? result = res : toastr.error("조회된 데이터가 없습니다.");
+			},
+			error: function(error){
+				toastr.error('기존 건 삭제 작업 실패: 알 수 없는 에러 발생');
+			}
+		})
+		return result;
+	}
+	</script>   
+</html>

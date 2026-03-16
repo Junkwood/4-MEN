@@ -1,0 +1,851 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aio.mes.manager.mapper.ManagerMapper">
+
+
+
+	<!-- bom관리 -->
+	<select id="bomList" resultType="ManagerVO">
+		SELECT distinct
+						b.bom_code,
+						m.mat_code,
+						m.mat_name,
+						m.mat_class,
+						b.use_amount,
+						b.note,
+						p.prod_code,
+						p.prod_name,
+						p.unit
+
+
+		FROM bom b  JOIN mat_common m 
+					  ON b.mat_code = m.mat_code
+					JOIN prod_common p 
+					  ON b.prod_code = p.prod_code
+					  
+		WHERE p.prod_code = #{prodCode}
+		
+		ORDER BY TO_NUMBER(SUBSTR(b.bom_code , 5))
+	</select>
+
+
+
+
+
+	<select id="bomProdList" resultType="ManagerVO">
+		SELECT
+				p.prod_code,
+				p.prod_name,
+				p.unit
+
+		FROM prod_common p
+		
+		ORDER BY TO_NUMBER(SUBSTR(p.prod_code , 6 ))
+	</select>
+
+	<!-- bom 모달 -->
+	<select id="showMatList" resultType="ManagerVO">
+		SELECT
+				mat_code,
+				mat_class,
+				mat_name,
+				standard,
+				unit,
+				safetystock
+				
+		FROM mat_common
+		
+		ORDER BY TO_NUMBER(SUBSTR(mat_code , 5))
+	</select>
+	
+	<select id="getBomCode" resultType="String">
+		SELECT 'BOM-' || NVL(MAX(TO_NUMBER(SUBSTR(bom_code, 5))) + 1, 1)
+			
+			FROM bom
+			
+			WHERE bom_code LIKE 'BOM-%'
+	</select>
+	
+	<select id="searchMatList" resultType="ManagerVO"
+		parameterType="String">
+		SELECT
+				mat_code,
+				mat_class,
+				mat_name,
+				standard,
+				unit,
+				safetystock
+				
+		FROM 	mat_common
+		
+		WHERE 	mat_name = #{matName}
+		
+		ORDER BY TO_NUMBER(SUBSTR(mat_code , 5 ))
+	</select>
+
+	<insert id="insertBom" parameterType="ManagerVO">
+		<selectKey keyProperty="bomCode" resultType="String"
+			order="BEFORE">
+
+			SELECT 'BOM-' || NVL(MAX(TO_NUMBER(SUBSTR(bom_code, 5))) + 1, 1)
+			
+			FROM bom
+			
+			WHERE bom_code LIKE 'BOM-%'
+
+		</selectKey>
+
+		INSERT INTO bom (
+							bom_code,
+							mat_code,
+							use_amount,
+							note,
+							prod_code
+		) 
+		VALUES (
+				#{bomCode},
+				#{matCode},
+				#{useAmount},
+				#{note},
+				#{prodCode}
+							)
+	</insert>
+
+	<update id="updateBom" parameterType="ManagerVO">
+		UPDATE bom
+		SET
+		mat_code = #{matCode}
+		<choose>
+			<when
+				test="useAmount != null and !useAmount.equals('') and note != null and !note.equals('')">
+				,use_amount = #{useAmount},
+				note = #{note}
+			</when>
+			<when
+				test="useAmount != null and !useAmount.equals('') and note = null and note.equals('')">
+				,use_amount = #{useAmount}
+			</when>
+			<when test="useAmount = null and useAmount.equals('')">
+				,note = #{note}
+			</when>
+		</choose>
+		WHERE bom_code = #{bomCode}
+	</update>
+
+	<delete id="deleteBom" parameterType="ManagerVO">
+		DELETE FROM bom
+		WHERE bom_code = #{bomCode}
+	</delete>
+
+	<!-- 자재관리 -->
+	<select id="materialList" resultType="ManagerVO">
+		SELECT m.mat_code,
+				m.mat_name,
+				m.mat_class,
+				m.standard,
+				m.unit,
+				m.safetystock
+
+		FROM mat_common m
+		
+		ORDER BY TO_NUMBER(SUBSTR(m.mat_code , 5))
+	</select>
+
+	<insert id="insertMat" parameterType="ManagerVO">
+		<selectKey keyProperty="matCode" resultType="String"
+			order="BEFORE">
+
+			SELECT 'MAT-' || NVL(MAX(TO_NUMBER(SUBSTR(mat_code, 5))) + 1, 1)
+			
+			FROM mat_common
+			
+			WHERE mat_code LIKE 'MAT-%'
+
+		</selectKey>
+		INSERT INTO mat_common (
+								mat_code,
+								mat_name,
+								mat_class,
+								unit,
+								standard,
+								safetystock)
+		VALUES (
+				#{matCode},
+				#{matName},
+				#{matClass},
+				#{unit},
+				#{standard},
+				#{safetystock})
+	</insert>
+
+	<update id="updateMat" parameterType="ManagerVO">
+		UPDATE mat_common
+		SET
+		mat_code = #{matCode}
+		<if test="matName != null and !matName.equals('')">
+			,mat_name = #{matName}
+		</if>
+		<if test="matClass != null and !matClass.equals('')">
+			,mat_class = #{matClass}
+		</if>
+		<if test="unit != null and !unit.equals('')">
+			,unit = #{unit}
+		</if>
+		<if test="standard != null and !standard.equals('')">
+			,standard = #{standard}
+		</if>
+		<if test="safetystock != null and !safetystock.equals('')">
+			,safetystock = #{safetystock}
+		</if>
+		where mat_code= #{matCode}
+	</update>
+
+	<delete id="deleteMat" parameterType="ManagerVO">
+		DELETE FROM mat_common
+		WHERE  mat_code = #{matCode}
+	</delete>
+
+	<select id="materialGetSearchList" parameterType="ManagerVO"
+		resultType="ManagerVO">
+		SELECT DISTINCT m.mat_code,
+						m.mat_name,
+						m.mat_class,
+						m.standard,
+						m.unit,
+						m.safetystock
+
+		FROM  mat_common m
+		
+		<where>
+			<choose>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('matName')">
+					AND mat_name LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+			</choose>
+		</where>
+		ORDER BY TO_NUMBER(SUBSTR(m.mat_code , 5))
+	</select>
+
+	<!-- 거래처관리 -->
+	<select id="clientList" resultType="ManagerVO">
+		SELECT DISTINCT
+						c.client_code,
+						c.client_name,
+						c.client_type,
+						c.tel,
+						c.address,
+						c.client_manager
+
+		FROM client c
+		
+		ORDER BY TO_NUMBER(SUBSTR(client_code , 8))
+		
+	</select>
+
+	<insert id="insertClient" parameterType="ManagerVO">
+		<selectKey keyProperty="clientCode" resultType="String"
+			order="BEFORE">
+
+			SELECT 'CLIENT-' || NVL(MAX(TO_NUMBER(SUBSTR(client_code, 8))) + 1, 1)
+			
+			FROM client
+			
+			WHERE client_code LIKE 'CLIENT-%'
+
+		</selectKey>
+		INSERT INTO client (
+							client_code,
+							client_name,
+							client_type,
+							tel,
+							address,
+							client_manager)
+		VALUES (
+				#{clientCode},
+				#{clientName},
+				#{clientType},
+				#{tel},
+				#{address},
+				#{clientManager})
+	</insert>
+
+	<update id="updateClient" parameterType="ManagerVO">
+		UPDATE client
+		SET
+		client_code = #{clientCode}
+		<if test="clientName != null and !clientName.equals('')">
+			,client_name = #{clientName}
+		</if>
+		<if test="clientType != null and !clientType.equals('')">
+			,client_type = #{clientType}
+		</if>
+		<if test="tel != null and !tel.equals('')">
+			,tel = #{tel}
+		</if>
+		<if test="address != null and !address.equals('')">
+			,address = #{address}
+		</if>
+		<if test="clientManager != null and !clientManager.equals('')">
+			,client_manager = #{clientManager}
+		</if>
+		where client_code= #{clientCode}
+	</update>
+
+	<delete id="deleteClient" parameterType="ManagerVO">
+		DELETE FROM client
+		where  client_code = #{clientCode}
+	</delete>
+
+	<select id="clientGetSearchList" parameterType="ManagerVO"
+		resultType="ManagerVO">
+		SELECT DISTINCT c.client_code,
+						c.client_name,
+						c.client_type,
+						c.tel,
+						c.address,
+						c.client_manager
+
+		FROM client c 
+		
+		<where>
+			<choose>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('clientName')">
+					AND client_name LIKE '%' || UPPER(#{managerVO.keyword}) || '%'
+				</when>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('clientManager')">
+					AND client_manager LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+			</choose>
+		</where>
+		ORDER BY TO_NUMBER(SUBSTR(c.client_code , 8))
+	</select>
+
+	<!-- 공정관리 -->
+
+
+	<!-- 제품관리 -->
+	<select id="prodList" resultType="ManagerVO">
+		SELECT  p.prod_name,
+				p.unit,
+				p.standard,
+				p.prod_code
+
+		FROM 	prod_common p
+		
+		ORDER BY TO_NUMBER(substr(p.prod_code ,6))
+	</select>
+
+	<insert id="insertProd" parameterType="ManagerVO">
+		<selectKey keyProperty="prodCode" resultType="String"
+			order="BEFORE">
+
+			SELECT 'PROD-' || NVL(MAX(TO_NUMBER(SUBSTR(prod_code, 6))) + 1, 1)
+			
+			FROM prod_common
+			
+			WHERE prod_code LIKE 'PROD-%'
+
+		</selectKey>
+
+		INSERT INTO prod_common (
+								  prod_code,
+								  prod_name,
+								  unit,
+								  standard)
+
+		VALUES (
+				#{prodCode},
+				#{prodName},
+				#{unit},
+				#{standard})
+	</insert>
+
+
+
+	<update id="updateProd" parameterType="ManagerVO">
+
+		UPDATE 	 prod_common
+
+		SET		 prod_code = #{prodCode}
+
+		<if test="prodName != null and !prodName.equals('')">
+				,prod_name = #{prodName}
+		</if>
+
+		WHERE	 prod_code= #{prodCode}
+
+	</update>
+	
+	
+	<delete id="deleteProd" parameterType="ManagerVO">
+
+		DELETE	FROM prod_common
+
+		WHERE 	prod_code = #{prodCode}
+
+	</delete>
+
+	<!-- 설비관리 -->
+	<select id="facList" resultType="ManagerVO">
+		SELECT  f.fac_code,
+                f.fac_name,
+                f.manufacture_date,
+                f.install_date,
+                f.inspect_cycle,
+                f.fac_status,
+                f.image,
+                f.upload_path,
+                f.fac_class_code,
+                f.date_check
+
+		FROM fac f
+		
+		ORDER BY TO_NUMBER(substr(f.fac_code , 5))
+	</select>
+
+	<insert id="insertFac" parameterType="ManagerVO">
+		<selectKey keyProperty="facCode" resultType="String"
+			order="BEFORE">
+
+			SELECT 'FAC-' || NVL(MAX(TO_NUMBER(SUBSTR(fac_code, 5))) + 1, 1)
+			
+			FROM fac
+			
+			WHERE fac_code LIKE 'FAC-%'
+
+		</selectKey>
+
+
+		INSERT INTO fac (
+						  fac_code,
+						  fac_name,
+						  fac_class_code,
+						  manufacture_date,
+						  install_date,
+						  inspect_cycle,
+						  image,
+						  upload_path,
+						  date_check,
+						  fac_status)
+
+		VALUES (
+				#{facCode},
+				#{facName},
+				#{facClassCode},
+				#{manufactureDate},
+				sysdate,
+				#{inspectCycle},
+				#{image},
+				#{uploadPath},
+				sysdate,
+				#{facStatus})
+	</insert>
+
+	<update id="updateFacBtn" parameterType="ManagerVO">
+
+		UPDATE fac
+
+		SET fac_code = #{facCode}
+
+		<if test="facName != null and !facName.equals('')">
+			,fac_name = #{facName}
+		</if>
+		<if test="facClassCode != null and !facClassCode.equals('')">
+			,fac_class_code = #{facClassCode}
+		</if>
+		<if test="manufactureDate != null and !manufactureDate.equals('')">
+			,manufacture_date = #{manufactureDate}
+		</if>
+		<if test="installDate != null and !installDate.equals('')">
+			,install_date = #{installDate}
+		</if>
+		<if test="inspectCycle != null and !inspectCycle.equals('')">
+			,inspect_cycle = #{inspectCycle}
+		</if>
+		
+		<if test="image != null and !image.equals('')">
+			,image = #{image}
+		</if>
+		<if test="uploadPath != null and !uploadPath.equals('')">
+			,upload_path = #{uploadPath}
+		</if>
+		
+		<if test="dateCheck != null and !dateCheck.equals('')">
+			,date_check = #{dateCheck}
+		</if>
+		<if test="facStatus != null and !facStatus.equals('')">
+			,fac_status = #{facStatus}
+		</if>
+
+		WHERE fac_code= #{facCode}
+
+	</update>
+
+	<!-- 이미지 -->
+	<delete id="deleteFac" parameterType="ManagerVO">
+
+		DELETE FROM fac
+
+		WHERE fac_code = #{facCode}
+
+	</delete>
+
+
+	<update id="updateFac" parameterType="ManagerVO">
+		UPDATE fac
+		
+		SET image = #{image}, upload_path = #{uploadPath}
+		
+		WHERE fac_code = #{facCode}
+	</update>
+
+	<select id="selectFacImageFileName" resultType="String">
+		SELECT upload_path
+		
+		FROM fac
+		
+		WHERE download_location = #{downloadLocation}
+	</select>
+
+
+	<!-- 조회기능 -->
+	<select id="bomGetSearchList" parameterType="ManagerVO"
+		resultType="ManagerVO">
+		SELECT DISTINCT p.prod_code, p.prod_name, p.unit
+		
+		FROM prod_common p
+		<where>
+			<choose>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('prodName')">
+					AND UPPER(prod_name) LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('prodName')">
+					AND UPEER(prod_name) LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+			</choose>
+		</where>
+		ORDER BY TO_NUMBER(substr(p.prod_code , 6 ))
+	</select>
+
+
+	<select id="facGetSearchList" parameterType="ManagerVO"
+		resultType="ManagerVO">
+		SELECT DISTINCT f.fac_code,
+						f.fac_name,
+						f.manufacture_date,
+						f.install_date,
+						f.inspect_cycle,
+						f.fac_status,
+						f.image,
+						f.upload_path,
+						f.fac_class_code
+
+		FROM fac f 
+		
+		<where>
+			<choose>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('facCode')">
+					AND UPPER(fac_code) LIKE '%' || UPPER(#{managerVO.keyword}) || '%'
+				</when>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('facName')">
+					AND fac_name LIKE '%' || UPPER(#{managerVO.keyword}) || '%'
+				</when>
+			</choose>
+		</where>
+		ORDER BY TO_NUMBER(substr(f.fac_code,5))
+	</select>
+
+
+
+
+	<select id="prodGetSearchList" parameterType="ManagerVO"
+		resultType="ManagerVO">
+		SELECT DISTINCT p.prod_name,
+						p.unit,
+						p.standard,
+						p.prod_code
+
+		FROM prod_common p 
+		
+		<where>
+			<choose>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('prodCode')">
+					AND UPPER(prod_code) LIKE '%' || UPPER(#{managerVO.keyword}) || '%'
+				</when>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('prodName')">
+					AND prod_name LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('unit')">
+					AND unit LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+			</choose>
+		</where>
+		ORDER BY TO_NUMBER(substr(p.prod_code , 6))
+	</select>
+
+
+
+	<!-- 검사기준관리 -->
+	<select id="testList" resultType="ManagerVO">
+
+		SELECT DISTINCT
+						t.test_code,
+						t.test_name,
+						t.test_item_unit,
+						t.note
+
+		FROM test t
+
+		ORDER BY TO_NUMBER(substr(t.test_code, 6))
+
+	</select>
+	
+	<insert id="insertTest" parameterType="ManagerVO">
+		<selectKey keyProperty="testCode" resultType="String"
+			order="BEFORE">
+
+			SELECT 'TEST-' || NVL(MAX(TO_NUMBER(SUBSTR(test_code, 6))) + 1, 1)
+			
+			FROM test
+			
+			WHERE test_code LIKE 'TEST-%'
+			
+		</selectKey>
+
+
+		INSERT INTO test (
+						   test_code,
+						   test_name,
+						   test_item_unit,
+						   note)
+
+		VALUES (
+				#{testCode},
+				#{testName},
+				#{testItemUnit},
+				#{note})
+	</insert>
+
+	<update id="updateTest" parameterType="ManagerVO">
+
+		UPDATE test
+
+		SET
+
+		test_code = #{testCode}
+
+		<if test="testName != null and !testName.equals('')">
+			,test_name = #{testName}
+		</if>
+		<if test="testItemUnit != null and !testItemUnit.equals('')">
+			,test_item_unit = #{testItemUnit}
+		</if>
+		<if test="note != null and !note.equals('')">
+			,note = #{note}
+		</if>
+		where test_code= #{testCode}
+
+	</update>
+
+
+	<delete id="deleteTest" parameterType="ManagerVO">
+
+		DELETE FROM test
+
+		WHERE  test_code = #{testCode}
+
+	</delete>
+
+
+	<select id="testGetSearchList" parameterType="ManagerVO"
+		resultType="ManagerVO">
+		SELECT DISTINCT t.test_code,
+                        t.test_name,
+                        t.test_item_unit,
+                        t.note
+
+		FROM test t
+		
+		<where>
+			<choose>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('testName')">
+					AND test_name LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('testItemUnit')">
+					AND test_item_unit LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+			</choose>
+		</where>
+		ORDER BY TO_NUMBER(substr(t.test_code, 6))
+	</select>
+
+
+	<!-- ========================= 공정관리 ============================= -->
+
+	<select id="procList" resultType="ManagerVO">
+		 SELECT distinct p.proc_code,
+                         p.proc_name,
+                         p.note,
+                         f.fac_class_code,
+                         p.proc_class_code
+
+		FROM proc p JOIN fac f
+					  ON p.fac_class_code = f.fac_class_code
+		
+		ORDER BY TO_NUMBER(substr(p.proc_code , 6))
+	</select>
+
+
+	<insert id="insertProc" parameterType="ManagerVO">
+		<selectKey keyProperty="procCode" resultType="String"
+			order="BEFORE">
+
+			SELECT 'PROC-' || NVL(MAX(TO_NUMBER(SUBSTR(proc_code, 6))) + 1, 1)
+			
+			FROM proc
+			
+			WHERE proc_code LIKE 'PROC-%'
+
+		</selectKey>
+
+		INSERT INTO proc (
+						   proc_code,
+						   proc_name,
+						   proc_class_code,
+						   fac_class_code,
+						   note)
+
+		VALUES (#{procCode},
+				#{procName},
+				#{procClassCode},
+				#{facClassCode},
+				#{note}
+						)
+	</insert>
+
+	<update id="updateProc" parameterType="ManagerVO">
+
+		UPDATE proc
+
+		SET
+
+		proc_code = #{procCode}
+
+		<if test="procName != null and !procName.equals('')">
+			,proc_name = #{procName}
+		</if>
+		<if test="procClassCode != null and !procClassCode.equals('')">
+			,proc_class_code = #{procClassCode}
+		</if>
+		<if test="facClassCode != null and !facClassCode.equals('')">
+			,fac_class_code = #{facClassCode}
+		</if>
+		<if test="note != null and !note.equals('')">
+			,note = #{note}
+		</if>
+		
+		where proc_code = #{procCode}
+	</update>
+
+
+	<delete id="deleteProc" parameterType="ManagerVO">
+
+		DELETE FROM proc
+
+		WHERE proc_code = #{procCode}
+
+	</delete>
+
+
+
+	<select id="procGetSearchList" parameterType="ManagerVO"
+		resultType="ManagerVO">
+		SELECT DISTINCT p.proc_code,
+						p.proc_name,
+						p.note,
+						f.fac_class_code,
+						p.proc_class_code
+
+		FROM proc p JOIN fac f
+					  ON p.fac_class_code = f.fac_class_code
+					  
+		<where>
+			<choose>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('procName')">
+					AND UPPER(proc_name) LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('procClassCode')">
+					AND proc_class_code LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+			</choose>
+		</where>
+		ORDER BY  TO_NUMBER(SUBSTR(p.proc_code , 6))
+	</select>
+
+	<select id="procOptionList" resultType="ManagerVO">
+		SELECT  main_code,
+				sub_code,
+				sub_code_name
+				FROM mes_sub_code
+
+		WHERE main_code IN ('PC', 'FD')
+	</select>
+	
+	<select id="procOptionList2" resultType="ManagerVO">
+		SELECT  main_code,
+				sub_code,
+				sub_code_name
+				FROM mes_sub_code
+
+		WHERE main_code IN ('PC', 'FD')
+	</select>
+	
+	<select id="matOptionList" resultType="ManagerVO">
+		SELECT  main_code,
+				sub_code,
+				sub_code_name
+		
+		FROM mes_sub_code
+
+		WHERE main_code IN ('MD')
+	</select>
+	
+	<select id="facOptionList" resultType="ManagerVO">
+		SELECT  main_code,
+				sub_code,
+				sub_code_name
+		
+		FROM mes_sub_code
+
+		WHERE main_code IN ('FD', 'FS')
+	</select>
+	
+	<select id="clientOptionList" resultType="ManagerVO">
+		SELECT  main_code,
+				sub_code,
+				sub_code_name
+		
+		FROM mes_sub_code
+
+		WHERE main_code IN ('AC')
+	</select>
+
+
+
+</mapper>

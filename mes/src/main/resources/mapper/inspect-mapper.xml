@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aio.mes.manager.mapper.InspectMapper">
+
+	<select id="inspectList" parameterType="String"
+		resultType="InspectVO">
+		SELECT DISTINCT
+						wp.work_progress_code AS workProgressCode,
+						wp.proc_code,
+						wp.work_instruct_detail_code,
+						wp.proc_num,
+						wp.progress,
+						wp.instruct_quantity,
+						wp.ent_member_code,
+						wp.error_quantity,
+						p.proc_class_code,
+						p.proc_name,
+						wi.work_name,
+						wid.prod_code,
+						pr.prod_name,
+						pr.unit,
+						wp.input_quantity,
+						wp.prod_quantity
+
+		FROM work_progress wp JOIN proc p
+								ON (wp.proc_code = p.proc_code)
+							  JOIN work_instruct_detail wid
+								ON (wid.work_instruct_detail_code = wp.work_instruct_detail_code)
+							  JOIN work_instruct wi
+								ON (wi.work_instruct_code = wid.work_instruct_code)
+							  JOIN prod_common pr
+								ON (pr.prod_code = wid.prod_code)
+
+		WHERE p.proc_class_code = 'PC1' AND wp.instruct_quantity > 0
+
+		ORDER BY wp.work_instruct_detail_code , wp.proc_num
+	</select>
+
+
+	<select id="inspectListInfo" parameterType="String"
+		resultType="InspectVO">
+		SELECT DISTINCT
+					    tp.test_process_code,
+					    wp.work_progress_code,
+					    wp.progress,
+					    tf.test_flow_code,
+					    wid.work_instruct_detail_code,
+					    wid.prod_code,
+					    p.prod_name,
+					    pr.proc_class_code,
+					    t.test_name,
+					    tp.test_quantity,
+					    tf.pass_criteria,
+					    tf.test_num,
+					    tp.error_quantity,
+					    wp.instruct_quantity,
+					    tp.test_date,
+					    tp.registration_date,
+					    tp.status,
+					    tp.emp_code,
+					    tp.note
+					    
+		FROM work_progress  wp  LEFT OUTER JOIN work_instruct_detail wid 
+											 ON wid.work_instruct_detail_code = wp.work_instruct_detail_code
+							    LEFT OUTER JOIN prod_common p 
+							    			 ON wid.prod_code = p.prod_code
+							    LEFT OUTER JOIN proc pr 
+							    			 ON pr.proc_code = wp.proc_code
+							    		   JOIN test_flow  tf 
+							    			 ON pr.proc_code = tf.proc_code
+							    LEFT OUTER JOIN test t 
+							    			 ON tf.test_code = t.test_code
+							    LEFT OUTER JOIN test_process tp 
+							    			 ON (tp.work_progress_code = wp.work_progress_code  AND tp.test_flow_code =tf.test_flow_code)
+		                               
+		WHERE wp.work_progress_code = #{workProgressCode}
+		
+		ORDER BY tf.test_num , wp.work_progress_code
+	</select>
+
+	<select id="getTestProc" resultType="String">
+		SELECT 'TEST-PROCESS-' || NVL(MAX(TO_NUMBER(SUBSTR(test_process_code, 14))) + 1, 1)
+			
+		FROM test_process
+					
+		WHERE test_process_code LIKE 'TEST-PROCESS-%'
+	</select>
+
+
+	<insert id="insertInspect" parameterType="InspectVO">
+	<selectKey keyProperty="testProcessCode" resultType="String"
+			order="BEFORE">
+			SELECT 'TEST-PROCESS-' || NVL(MAX(TO_NUMBER(SUBSTR(test_process_code, 14))) + 1, 1)
+			
+			FROM test_process
+					
+			WHERE test_process_code LIKE 'TEST-PROCESS-%'
+		</selectKey>
+		INSERT INTO test_process (
+									test_process_code,
+									test_date,
+									test_quantity,
+									test_flow_code,
+									error_quantity,
+									note,
+									ent_member_code,
+									work_progress_code,
+									status
+									
+														) 
+		VALUES (
+				 #{testProcessCode, jdbcType=VARCHAR},
+				 sysdate,
+				 #{testQuantity, jdbcType=INTEGER},
+				 #{testFlowCode, jdbcType=VARCHAR},
+				 #{errorQuantity, jdbcType=INTEGER},
+				 #{note, jdbcType=VARCHAR},
+				 #{entMemberCode, jdbcType=VARCHAR},
+				 #{workProgressCode, jdbcType=VARCHAR},
+				 #{status, jdbcType=VARCHAR}
+													   )
+	</insert>
+
+
+	<select id="getNewTestProcessCode" resultType="String">
+		SELECT 'TEST-PROCESS-' || NVL(MAX(TO_NUMBER(SUBSTR(test_process_code, 14))) + 1, 1)
+			
+	 	FROM test_process
+					
+		WHERE test_process_code LIKE 'TEST-PROCESS-%'
+	</select>
+
+	<!-- updateInspect 쿼리 수정 -->
+	<update id="updateInspect" parameterType="InspectVO">
+		UPDATE 	test_process
+		SET
+				test_date = sysdate,
+				test_quantity = #{testQuantity, jdbcType=INTEGER},
+				test_flow_code = #{testFlowCode, jdbcType=VARCHAR},
+				error_quantity = #{errorQuantity, jdbcType=INTEGER},
+				note = #{note, jdbcType=VARCHAR},
+				status = #{status, jdbcType=VARCHAR},
+				ent_member_code = #{entMemberCode, jdbcType=VARCHAR}
+				
+		WHERE 	test_process_code = #{testProcessCode, jdbcType=VARCHAR}
+	</update>
+
+	<update id="updateStatus" parameterType="InspectVO">
+		UPDATE 	test_process
+		
+		SET 	status = #{status, jdbcType=VARCHAR}
+		
+		WHERE 	test_process_code = #{testProcessCode, jdbcType=VARCHAR}
+	</update>
+
+
+	<delete id="deleteInspect" parameterType="InspectVO">
+		DELETE
+		
+		FROM 	test_process
+		
+		WHERE 	test_process_code = #{testProcessCode}
+	</delete>
+
+
+	<update id="updateQuantity" parameterType="map">
+		UPDATE 	work_progress
+		
+		SET
+				prod_quantity = CASE WHEN #{prodQuantity} IS NULL THEN prod_quantity ELSE
+				#{prodQuantity} END,
+				error_quantity = CASE WHEN #{errorQuantity} IS NULL THEN error_quantity ELSE
+				#{errorQuantity} END,
+				input_quantity = CASE WHEN #{inputQuantity} IS NULL THEN input_quantity ELSE
+				#{inputQuantity} END,
+				instruct_quantity = CASE WHEN #{instructQuantity} IS NULL THEN instruct_quantity ELSE
+				#{instructQuantity} END
+				
+		WHERE work_progress_code = #{workProgressCode}
+	</update>
+
+	<select id="searchWorkProgressList" resultType="InspectVO"
+		parameterType="SearchVO">
+		SELECT DISTINCT
+						wp.work_progress_code as workProgressCode,
+						wp.proc_code,
+						wp.work_instruct_detail_code,
+						wp.proc_num,
+						wp.instruct_quantity,
+						wp.ent_member_code,
+						wp.progress,
+						p.proc_class_code,
+						p.proc_name,
+						wi.work_name,
+						wid.prod_code,
+						pr.prod_name,
+						pr.unit,
+						wp.input_quantity,
+						wp.prod_quantity
+						
+		FROM work_progress wp JOIN proc p 
+								ON (wp.proc_code = p.proc_code)
+							  JOIN work_instruct_detail wid 
+							    ON (wid.work_instruct_detail_code = wp.work_instruct_detail_code)
+							  JOIN work_instruct wi 
+							    ON (wi.work_instruct_code = wid.work_instruct_code)
+							  JOIN prod_common pr ON (pr.prod_code = wid.prod_code)
+							  
+		WHERE p.proc_class_code = 'PC1' AND wp.instruct_quantity > 0
+		<if test="inputVal != null and inputVal != ''">
+			<choose>
+				<when test="radioVal.equals('workName')">
+					AND wi.work_name LIKE '%' || #{inputVal} || '%'
+				</when>
+				<when test="radioVal == 'prodName'.toString()">
+					AND pr.prod_name LIKE '%'||  #{inputVal} || '%'
+				</when>
+				<otherwise></otherwise>
+			</choose>
+		</if>
+		ORDER BY  wp.work_instruct_detail_code , wp.proc_num
+	</select>
+
+	<update id="updateNextProc" parameterType="map">
+		UPDATE 	work_progress
+		
+		SET 	instruct_quantity = #{prodQuantity}
+		
+		WHERE 	work_instruct_detail_code = #{workInstructDetailCode}
+		AND 	proc_num = #{procNum}
+	</update>
+
+	<select id="getNextProc" resultType="InspectVO">
+		SELECT	work_progress_code,
+				proc_code,
+				work_instruct_detail_code,
+				proc_num
+		FROM 	work_progress
+		
+		WHERE 	work_instruct_detail_code = #{workInstructDetailCode}
+		AND 	proc_num = #{currentProcNum} + 1
+	</select>
+
+	
+	<update id="updateProgress" parameterType="map">
+		UPDATE 	work_progress
+		
+		SET 	progress = 'Y'
+		
+		WHERE 	work_instruct_detail_code = #{workInstructDetailCode}
+		
+		AND 	work_progress_code = #{workProgressCode}
+	</update>
+	<!-- 부등호가 있을 땐 <![CDATA[]]> -->
+	<select id="checkProgress" parameterType="map"
+		resultType="String">
+		SELECT 	progress
+		
+		FROM 	work_progress
+		
+		WHERE 	work_instruct_detail_code = #{workInstructDetailCode}
+		AND <![CDATA[proc_num < #{procNum} ]]>
+		AND progress != 'Y'
+	</select>
+
+	<select id="countProgress" parameterType="map" resultType="int">
+		SELECT 	COUNT(*)
+		
+		FROM 	work_progress
+		
+		WHERE 	work_instruct_detail_code = #{workInstructDetailCode}
+		AND 	<![CDATA[proc_num < #{procNum} ]]>
+	</select>
+
+
+	<select id="testFlowProd" resultType="InspectVO">
+		SELECT  prod_name,
+                unit,
+                standard,
+                prod_code
+                
+		FROM    prod_common
+        
+        ORDER BY TO_NUMBER(SUBSTR(prod_code , 6))
+	</select>
+
+
+	<select id="testFlowProc" resultType="InspectVO">
+		select  proc_code,
+				proc_name,
+				fac_class_code,
+				proc_class_code,
+				ent_member_code
+
+		FROM    proc
+		
+		WHERE   proc_class_code = 'PC1' 
+        
+        ORDER BY TO_NUMBER(SUBSTR(proc_code , 6))
+	</select>
+
+
+	<select id="testFlowList" resultType="InspectVO">
+		SELECT  tf.test_num,
+                tf.test_flow_code,
+                tf.test_code,
+                tf.pass_criteria,
+                tf.proc_code,
+                p.proc_code,
+                p.proc_class_code,
+                tf.note
+
+		FROM test_flow tf JOIN proc p
+                            ON tf.proc_code = p.proc_code
+                          JOIN test t
+                            ON tf.test_code = t.test_code
+                            
+		WHERE p.proc_class_code = 'PC1' AND tf.proc_code = #{proc_code} 
+        
+		ORDER BY TO_NUMBER(SUBSTR(tf.test_flow_code , 11))
+	</select>
+
+	<select id="testModalData" resultType="InspectVO">
+		
+		select  	test_code,
+					test_name,
+					test_item,
+					test_item_unit,
+					note
+		FROM test
+				
+        ORDER BY TO_NUMBER(SUBSTR(test_code , 6))
+
+	</select>
+
+
+
+	<insert id="insertTestFlow" parameterType="ManagerVO">
+		<selectKey keyProperty="testFlowCode" resultType="String"
+			order="BEFORE">
+			SELECT 'TEST-FLOW-' || NVL(MAX(TO_NUMBER(SUBSTR(test_flow_code, 11))) + 1, 1)
+			
+			FROM test_flow
+					
+			WHERE test_flow_code LIKE 'TEST-FLOW-%'
+		</selectKey>
+
+		INSERT INTO test_flow (
+		test_num,
+		test_flow_code,
+		test_code,
+		pass_criteria,
+		proc_code)
+
+		VALUES (
+		#{testNum},
+		#{testFlowCode},
+		#{testCode},
+		#{passCriteria},
+		#{procCode})
+	</insert>
+
+	<update id="updateTestFlow" parameterType="ManagerVO">
+
+		UPDATE test_flow
+
+		SET
+
+		test_num = #{testNum}
+		<if test="testCode != null and !testCode.equals('')">
+			,test_code = #{testCode},
+		</if>
+		<if test="passCriteria != null and !passCriteria.equals('')">
+			,pass_criteria = #{passCriteria}
+		</if>
+		<if test="note != null and !note.equals('')">
+			,note = #{note}
+		</if>
+
+	</update>
+
+
+	<delete id="deleteTestFlow" parameterType="ManagerVO">
+
+		delete FROM test_flow
+
+		where test_flow_code = #{testFlowCode}
+
+	</delete>
+
+
+	<select id="searchTestList" resultType="InspectVO"
+		parameterType="SearchVO">
+		select test_code,
+		test_name,
+		test_item,
+		test_item_unit,
+		note
+		FROM test
+		WHERE
+		<if test="inputVal != null and inputVal != ''">
+			<choose>
+				<when test="radioVal.equals('testName')">
+					AND testName = #{inputVal}
+				</when>
+				<when test="radioVal.equals('facClassCode')">
+					AND fac_class_code = #{inputVal}
+				</when>
+				<otherwise></otherwise>
+			</choose>
+		</if>
+		ORDER BY test_num
+	</select>
+
+	
+	<select id="procOptionList" resultType="ManagerVO">
+		SELECT  main_code,
+				sub_code,
+				sub_code_name
+				FROM mes_sub_code
+
+		WHERE main_code IN ('PC', 'FD')
+	</select>
+	
+	
+	<select id="inspectDetailList" parameterType="InspectVO">
+		SELECT DISTINCT
+					    tp.test_process_code,
+					    wp.work_progress_code,
+					    wp.progress,
+					    tf.test_flow_code,
+					    wid.work_instruct_detail_code,
+					    wid.prod_code,
+					    p.prod_name,
+					    pr.proc_class_code,
+					    t.test_name,
+					    tp.test_quantity,
+					    tf.pass_criteria,
+					    tf.test_num,
+					    tp.error_quantity,
+					    wp.instruct_quantity,
+					    tp.test_date,
+					    tp.registration_date,
+					    tp.status,
+					    tp.emp_code,
+					    tp.note
+					    
+		FROM work_progress  wp  LEFT OUTER JOIN work_instruct_detail wid 
+											 ON wid.work_instruct_detail_code = wp.work_instruct_detail_code
+							    LEFT OUTER JOIN prod_common p 
+							    			 ON wid.prod_code = p.prod_code
+							    LEFT OUTER JOIN proc pr 
+							    			 ON pr.proc_code = wp.proc_code
+							    		   JOIN test_flow  tf 
+							    			 ON pr.proc_code = tf.proc_code
+							    LEFT OUTER JOIN test t 
+							    			 ON tf.test_code = t.test_code
+							    LEFT OUTER JOIN test_process tp 
+							    			 ON (tp.work_progress_code = wp.work_progress_code  AND tp.test_flow_code =tf.test_flow_code)
+		                               
+		WHERE wp.work_progress_code = #{workProgressCode}
+		
+		ORDER BY tf.test_num , wp.work_progress_code
+		</select>
+		
+		<select id="searchProcList" parameterType="InspectVO"
+		resultType="InspectVO">
+		SELECT DISTINCT p.proc_code,
+						p.proc_name,
+						p.note,
+						f.fac_class_code,
+						p.proc_class_code
+
+		FROM proc p JOIN fac f
+					  ON p.fac_class_code = f.fac_class_code
+					  
+		<where>
+			<choose>
+				<when
+					test="inspectVO.type != null and inspectVO.type.equals('procName')">
+					AND UPPER(proc_name) LIKE '%' || UPPER(#{inspectVO.keyword}) || '%'
+				</when>
+				<when
+					test="inspectVO.type != null and inspectVO.type.equals('procName')">
+					AND proc_name LIKE '%' || #{inspectVO.keyword} || '%'
+				</when>
+			</choose>
+		</where>
+		ORDER BY  TO_NUMBER(SUBSTR(p.proc_code , 6))
+	</select>
+</mapper>

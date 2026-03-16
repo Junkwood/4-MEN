@@ -1,0 +1,58 @@
+.scrolltable{
+	table-layout: fixed;
+	border-collapse: collapse;
+  }
+.scrolltable thead{
+	text-align: center;	
+   }
+.scrolltable tbody{
+	overflow: auto;
+	height: 190px;
+   }
+.searchGroup{
+	margin-top:16px;
+	margin-right:10px;
+}
+.order-select{
+	display: inline;
+	width: 25%;
+  }
+
+.order-search{
+	display: inline;
+	width: 25%;
+  }
+.order-search-title{
+	width: 30%;
+	margin-right: 10%;
+  }
+.order-search-nav{
+	text-align: right;
+  }
+.order-container{
+	test-align: right;
+  }
+    td , tr{
+	text-align: center;
+	font-size: 15px;
+  }
+  #groub-btn{ 
+     margin-bottom:8px;
+  }
+
+   h1 {
+	margin-top: 50px;
+   }
+   .orderCallTable{
+     clear: both;
+   }
+   #grid4{
+      margin-top:30px;
+   }
+  #minusBtn{
+     margin-right:25px;
+     margin-left:5px;
+  }
+  .rowAM{
+    margin-bottom:20px;
+  }

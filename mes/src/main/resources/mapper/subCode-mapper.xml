@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="com.aio.mes.manager.mapper.SubCodeMapper">
+     <select id="mainCodeDisplay">
+         SELECT main_code,
+       			main_code_name
+				FROM mes_main_code
+     </select>
+     <select id="subCodeDisplay">
+        SELECT sub_code,
+       		   sub_code_name,
+       		   main_code
+		  FROM mes_sub_code
+		WHERE main_code=#{mainCode}
+		ORDER BY sub_code
+     </select>
+     <insert id="subCodeAdd" parameterType="subCodeVO">
+        INSERT INTO mes_sub_code(sub_code,
+                                 main_code,
+                                 sub_code_name)
+		VALUES (#{subCode},
+		        #{mainCode},
+		        #{subCodeName}) 
+     </insert>
+     <update id="subCodeModify" parameterType="subCodeVO">
+     UPDATE mes_sub_code
+     SET sub_code_name=#{subCodeName}
+     WHERE sub_code=#{subCode}
+     </update>
+     <delete id="subCodeDelete" parameterType="subCodeVO">
+     DELETE FROM mes_sub_code
+     WHERE sub_code= #{subCode}
+     </delete>
+  </mapper>

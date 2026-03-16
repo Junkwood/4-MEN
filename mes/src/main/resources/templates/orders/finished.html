@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+<style>
+  #finishedSelect{
+    width:9%;
+  }
+  #searchFinished{
+    width:16%;
+  }
+  .searchGroup{
+    margin-bottom:10px;
+  }
+</style>
+ </head>
+<body>
+    <div class="container">
+		<h1>완제품입고관리</h1>
+		<div class="order-container" style="float: right;" id='groub-btn'>
+		  	<input type='button' class="btn btn-outline-success" id="plusBtn" value="╆">
+			<input type='button' class="btn btn-outline-danger" id="minusBtn" value="ㅡ">
+			<input type='button' class="btn btn-outline-primary" value="재고조회" id="finishedBtn">
+			<input type='button' class="btn btn-outline-success" value="초기화" id="resetBtn">
+			<input type='button' class="btn btn-outline-danger" value="저장" id="saveBtn">
+		</div>
+		  
+		   <div class="row orderCallTable">
+              
+			   <div class="col-12">
+				    <div id="grid1"></div>
+			   </div>
+			</div>
+			<h1>완제품 입고 조회</h1>
+			<div class="order-search-nav searchGroup">
+						<select class="form-select order-select"
+							aria-label="Default select example" id=finishedSelect>
+							<option selected value="lot">LOT</option>
+							<option value="empName">담당자</option>
+							<option value="prodName">제품명</option>
+						</select> 
+						<input class="form-control me-2 order-search" type="search"
+							placeholder="Search" aria-label="Search" id="searchFinished">
+						<button class="btn btn-outline-success" type="button" id="searchFinishedBtn">검색</button>
+			</div>
+			<div class="row orderCallTable">	  
+				<div class="col-12">
+					 <div id="grid2"></div>
+				</div>
+			</div>
+	</div>
+	<div class="modal fade" id="Dispatch-Number-Modal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-4 order-search-title textInline" 
+						id="exampleModalLabel">완제품입고수량</h1>
+				    <button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+						
+				</div>
+				<div class="modal-body">
+					<div class="order-search-nav searchGroup">
+
+						<input class="form-control me-2 order-search" type="search"
+							placeholder="제품명 검색" aria-label="Search" id="searchOrder">
+						<button class="btn btn-outline-success" type="button" id="searchBtn">검색</button>
+					</div>
+					<div class="row">
+						<div class="col-12">
+							<div id="numberGrid"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+					<input type='button' class="btn btn-outline-primary" value="저장" id="numberSaveBtn">
+					</div>
+				</div>
+			</div>
+		</div>
+  </div>
+  <div class="modal fade" id="Finished-Modal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-4 order-search-title textInline" 
+						id="exampleModalLabel">완제품입고수량</h1>
+				    <button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+						
+				</div>
+				<div class="modal-body">
+					<div class="order-search-nav searchGroup">
+                         <select class="form-select order-select"
+							aria-label="Default select example" id=orderSelect>
+							<option selected value="lot">LOT별</option>
+							<option value="prodName">제품명</option>
+						</select> 
+						<input class="form-control me-2 order-search" type="search"
+							placeholder="검색" aria-label="Search" id="finishedInput">
+						<button class="btn btn-outline-success" type="button" id="searchFiniBtn">검색</button>
+					</div>
+					<div class="row">
+						<div class="col-12">
+							<div id="alreadyGrid"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+					<input type='button' class="btn btn-outline-danger" value="삭제" id="DeleteBtn">
+					<input type='button' class="btn btn-outline-primary" value="저장" id="modifySaveBtn">
+					</div>
+				</div>
+			</div>
+		</div>
+  </div>
+  <!-- 모달창 -->
+<div class="modal fade" id="Sucess-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">등록 완료</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: center;">
+          <img src="/images/smileImg.png" width="200" alt="Smile Image">
+          <h3 style="margin-top: 20px; font-family: 'Noto Sans KR', sans-serif;">등록이 완료되었습니다.</h3>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-success" id="nextLevel">등록 완료</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+<script th:inline="javascript">
+
+let auto = [[${auto}]] 
+//세션값 가져와 회원코드 가져오기
+let empCode =[[${#authentication.principal.empCode}]];
+//세션값 가져와 이름 가져오기
+let empName =[[${#authentication.principal.empName}]]; 
+//체크하기
+let modifyCount=-1;
+//csrf 토큰 넣을 값 가져오기
+const token = $("meta[name='_csrf']").attr("content")
+const header = $("meta[name='_csrf_header']").attr("content");
+
+const numberGrid = new tui.Grid({
+    el: document.getElementById('numberGrid'),
+    scrollX: false,
+    scrollY: false,
+    columns:[
+    	{ header : '작업지시상세코드' ,name:'workInstructDetailCode',align:'center',width:200},
+        { header: '제품코드',name:'prodCode',align:'center'},
+        { header: '제품명',name:'prodName'},
+        { header: '입고가능재고',name:'prodQuantity',align:'right',
+        	formatter: function(price){
+            	  return priceFormat(price.value)+'개';
+              }
+        },
+        { header: '입고량',name:'storeQuantity',align:'right',editor:'text',
+        	validation:{
+                dataType:'number'
+             },
+            formatter: function(price){
+          	  return priceFormat(price.value)+'개';
+            },
+       }
+    ],
+    		
+    
+});
+const grid1 = new tui.Grid({
+    el: document.getElementById('grid1'),
+    scrollX: false,
+    scrollY: false,
+    rowHeaders: ['checkbox'],
+    columns:[
+    	{ header : 'LOT' ,name:'lot',align:'center'},
+    	{ header : '작업지시상세코드' ,name:'workInstructDetailCode',align:'center'},
+        { header: '생성날짜',name:'storeDate',align:'center'},
+        { header: '제품코드',name:'prodCode',align:'center'},
+        { header: '제품명',name:'prodName'},
+        { header: '입고수량',name:'storeQuantity',align:'right',
+        	
+        	formatter: function(price){
+            	  return priceFormat(price.value)+'개';
+              }
+        },
+      
+        { header: '사원코드',name:'empCode',align:'center'},
+        { header: '담당자',name:'empName',align:'center'},
+        
+    ],
+    		
+    
+});
+const grid2 = new tui.Grid({
+    el: document.getElementById('grid2'),
+    scrollX: false,
+    scrollY: false,
+    pageOptions: {
+        perPage: 5,
+        useClient: true,
+    },
+    columns:[
+    	{ header : 'LOT' ,name:'lot',align:'center'},
+        { header: '생성날짜',name:'storeDate',align:'center'},
+        { header: '제품명',name:'prodName'},
+        { header: '입고수량',name:'storeQuantity',align:'right',
+        	
+        	formatter: function(price){
+            	  return priceFormat(price.value)+'개';
+              }
+        },
+      
+        { header: '담당자',name:'empName',align:'center'},
+        
+    ],
+    		
+    
+});
+const alreadyGrid= new tui.Grid({
+    el: document.getElementById('alreadyGrid'),
+    scrollX: false,
+    scrollY: false,
+    rowHeaders: ['checkbox'],
+    pageOptions: {
+        perPage: 5,
+        useClient: true,
+    },
+    columns:[
+    	{ header : 'LOT' ,name:'lot',align:'center'},
+    	{ header : '작업지시상세코드' ,name:'workInstructDetailCode',align:'center'},
+        { header: '생성날짜',name:'storeDate',align:'center'},
+        { header: '제품코드',name:'prodCode',align:'center'},
+        { header: '제품명',name:'prodName'},
+        { header: '입고수량',name:'beforeQuantity',align:'right',
+        	formatter: function(price){
+            	  return priceFormat(price.value)+'개';
+              }
+        },
+        { header: '변경입고수량',name:'storeQuantity',align:'right',editor:'text',
+        	validation:{
+                dataType:'number'
+             },
+        	formatter: function(price){
+            	  return priceFormat(price.value)+'개';
+              }
+        },
+        { header: '사원코드',name:'empCode',align:'center'},
+        { header: '담당자',name:'empName',align:'center'},
+        
+    ],
+    		
+    
+});
+grid1.hideColumn("workInstructDetailCode");
+grid1.hideColumn("prodCode");
+grid1.hideColumn("empCode");
+alreadyGrid.hideColumn("empCode");
+alreadyGrid.hideColumn("workInstructDetailCode");
+alreadyGrid.hideColumn("prodCode");
+//numberGrid.hideColumn("workInstructDetailCode");
+//클릭시 ajax를 돌리고 입고가능재고 모달창열기 
+$('#plusBtn').on('click',function(){
+	if(modifyCount == 1){
+		toastr.error('수정시 등록은 불가합니다.')
+		return;
+	}
+	 $('#Dispatch-Number-Modal').modal('show');
+	ajaxFinishedList();
+})
+//ajaxFinishedList로 실행
+function ajaxFinishedList(prodName='') {
+    $.ajax({
+        url: "/finishedList",
+        method: "GET",
+        data: {
+        	prodName: prodName,
+        },
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+        	numberGrid.resetData(result);
+        	numberGrid.refreshLayout();
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+//입고 가능재고 검색창
+$('#searchBtn').on('click', function(){
+    let prodName = '';
+    let optionSelect = $('#dispatchSelect :selected').val();
+    prodName = $('#searchOrder').val();
+    ajaxFinishedList(prodName);
+    $('#searchOrder').val('');
+});
+//엔터 클릭시 입고가능재고 검색
+$('#searchOrder').on("keyup", function(key){
+    if(key.keyCode == 13){
+    	    let prodName = $('#searchOrder').val();
+    	    ajaxFinishedList(prodName);
+    	    $('#searchOrder').val('');
+    }
+});
+//금액 포맷 함수('#,###')
+function priceFormat(price) {
+	if(price == null){
+		return '0';
+	}
+	let result = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+	return result;
+}
+$('#numberSaveBtn').on('click', function() {
+	  modifyCount=0;
+	  const changes = numberGrid.getModifiedRows();
+	  let grid1Count = grid1.getRowCount();
+	  for(let i =0;i<changes.updatedRows.length;i++){
+		  let row = changes.updatedRows[i];
+		  let prodQuantity =parseFloat(row.prodQuantity);
+		  let storeQuantity = parseFloat(row.storeQuantity);
+		  if(row.storeQuantity<1){
+				 toastr.error('0이하의 상품은 재고등록이안됩니다.')
+				 return;
+			}
+		  //재고보다 더 많은 수량을 기압하면 없앰 
+		  if(prodQuantity<storeQuantity){
+			  toastr.error('재고보다 많은 수량을 기입하였습니다.')
+			  return;
+		    }
+		  //이미 작업상세코드가 grid1에 있으면 return
+		  for(j=0; j<grid1Count; j++){
+			  let grid1Row = grid1.getRow(j)
+			  if(grid1Row.workInstructDetailCode==row.workInstructDetailCode
+				&& grid1Row.prodCode==row.prodCode){
+				  toastr.error('이미 해당 작업지시상세번호는 기입하셨습니다.')
+				  return;
+			  }
+		  }
+			
+			     let numberAdd = {
+				  lot : auto,
+				 workInstructDetailCode : row.workInstructDetailCode,
+				 storeDate : getCurrentDate(),
+				  prodCode : row.prodCode,
+				 prodName :row.prodName,
+				 storeQuantity : storeQuantity,
+				  empCode : empCode, 
+				 empName : empName
+			  }  
+			  grid1.appendRow(numberAdd);
+			  let lot = auto.substr(4)
+			  lot++;
+			  auto = 'LOT-'+lot
+	}
+	  $('#Dispatch-Number-Modal').modal('hide');
+})
+
+//-버튼클릭시 주문상세행 제거
+$('#minusBtn').on('click', function(ev){
+    let selectedRows = grid1.getCheckedRows();
+    if(selectedRows.length > 0){
+        for(let i = selectedRows.length - 1; i >= 0; i--){
+            grid1.removeRow(selectedRows[i].rowKey);
+        }
+    } else {
+        toastr.error('선택된 행이 없습니다.');
+    }
+    
+});
+// 현재 날짜를 가져오는 함수
+  function getCurrentDate() {
+        const today = new Date();
+        const year = today.getFullYear();
+        let month = today.getMonth() + 1;
+        let day = today.getDate();
+        month = month < 10 ? '0' + month : month;
+        day = day < 10 ? '0' + day : day;
+        return year + '-' + month + '-' + day;
+}
+$('#finishedBtn').on('click',function(ev){
+		if(modifyCount==0){
+			toastr.error('등록중 수정은 불가합니다.')
+			return;
+		}
+	$('#Finished-Modal').on('shown.bs.modal', function () {
+		ajaxAlreadyFinishedList();
+		alreadyGrid.refreshLayout();
+    }).modal('show');
+})
+//입고조회클릭시 실행되는 ajax
+function ajaxAlreadyFinishedList(lot='',prodName='') {
+    $.ajax({
+        url: "/alreadyFinished",
+        method: "GET",
+        data: {
+        	lot:lot,
+        	prodName: prodName,
+        },
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+        	alreadyGrid.resetData(result);
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+$('#searchFiniBtn').on('click',function(){
+	let lot = '';
+	let prodName='';
+	 let optionSelect = $('#orderSelect :selected').val();
+	 if(optionSelect=='lot'){
+		 lot = $('#finishedInput').val();
+	 }else if(optionSelect=='prodName'){
+		 prodName = $('#finishedInput').val();
+	 }
+	 ajaxAlreadyFinishedList(lot,prodName);
+	 $('#finishedInput').val('');
+})
+$('#finishedInput').on("keyup", function(key){
+	 if(key.keyCode == 13){
+		 let lot = '';
+		 let prodName='';
+	     let optionSelect = $('#orderSelect :selected').val();
+			 if(optionSelect=='lot'){
+				 lot = $('#finishedInput').val();
+			 }else if(optionSelect=='prodName'){
+				 prodName = $('#finishedInput').val();
+			 }
+			 ajaxAlreadyFinishedList(lot,prodName);
+			 $('#finishedInput').val('');
+	 }
+});
+$('#modifySaveBtn').on('click', function() {
+	modifyCount=1;
+	  const changes = alreadyGrid.getModifiedRows();
+	  let grid1Count = grid1.getRowCount();
+	  for(let i =0;i<changes.updatedRows.length;i++){
+		  let row = changes.updatedRows[i];
+		  let prodQuantity =parseFloat(row.prodQuantity);
+		  let storeQuantity = parseFloat(row.storeQuantity);
+	 if(row.storeQuantity<1){
+		 toastr.error('0이하의 상품은 재고등록이안됩니다.')
+		 return;
+	 }
+		  
+		  //이미 작업상세코드가 grid1에 있으면 return
+		  for(j=0; j<grid1Count; j++){
+			  let grid1Row = grid1.getRow(j)
+			  if(grid1Row.workInstructDetailCode==row.workInstructDetailCode
+				&& grid1Row.prodCode==row.prodCode){
+				  toastr.error('이미 해당 작업지시상세번호는 기압하셨습니다.')
+				  return;
+			  }
+		  }
+			
+			     let numberAdd = {
+				  lot : row.lot,
+				 workInstructDetailCode : row.workInstructDetailCode,
+				 storeDate : row.storeDate,
+				  prodCode : row.prodCode,
+				 prodName :row.prodName,
+				 storeQuantity : storeQuantity,
+				  empCode : row.empCode, 
+				 empName : row.empName
+			  } 
+			  grid1.appendRow(numberAdd);
+			  let lot = auto.substr(3)
+			  lot++;
+			  auto = 'LOT'+lot
+	}
+	  $('#Finished-Modal').modal('hide');
+})
+//등록
+$('#saveBtn').on('click',function(){
+	if(modifyCount==0){
+		 $.ajax({
+		 url: "/addFinished",
+	        method: "post",
+	        data: JSON.stringify(grid1.getData()),
+	        contentType: 'application/json',
+	        beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+	        success: function(result) {
+	        	$('#Sucess-modal h3').text("등록이 완료되었습니다.");
+	        	$('#nextLevel').text('등록완료')
+	        	$('#Sucess-modal').modal('show');
+	      }
+	  })
+    }
+	if(modifyCount==1){
+		$.ajax({
+			 url: "/updateFinished",
+		        method: "post",
+		        data: JSON.stringify(grid1.getData()),
+		        contentType: 'application/json',
+		        beforeSend : function(xhr) {
+		            xhr.setRequestHeader(header, token);
+		        },
+		        success: function(result) {
+		        	
+		        	if(result=='success'){
+		        	$('#Sucess-modal h3').text("수정이 완료되었습니다.");
+		        	$('#nextLevel').text('수정완료')
+		        	$('#Sucess-modal').modal('show');
+		         }else if(result=='fail'){
+		        	 toastr.error('가지고있는재고보다 입고량이 많아 등록이 불가합니다.')
+		         }else{
+		        	 toastr.error('이미 출고처리된 항목입니다.')
+		         }
+		      }
+		  })
+	}
+})
+
+$('#DeleteBtn').on('click',function(ev){
+	  let selectedRows = alreadyGrid.getCheckedRows();
+	  $.ajax({
+	        url: "/deleteFinished",
+	        method: "delete",
+	        data: JSON.stringify(selectedRows),
+	        contentType: 'application/json',
+	        beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+	        success: function(result) {
+	        	if(result=="fail"){
+	        		toastr.error('이미출고처리된 상품입니다.')
+	        	}
+	        	else{
+	        	$('#Sucess-modal h3').text("삭제가 완료되었습니다.");
+	        	$('#nextLevel').text('삭제완료')
+	        	$('#Sucess-modal').modal('show');
+	        	}
+	        },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    });
+	  
+})
+$('#nextLevel').on('click',function(ev){
+	$('#Sucess-modal').modal('hide');
+})
+$('#Sucess-modal').on('hidden.bs.modal', function (e) {
+	window.location.href = '/business/finished';
+})
+$('#resetBtn').on('click',function(){
+	//초기화작업
+	modifyCount = -1;
+	grid1.resetData([]);
+})
+//grid2 디스플레이
+function finishedDetailList(lot='',prodName='',empName=''){
+	 $.ajax({
+	        url: "/finishedDetailList",
+	        method: "GET",
+	        data: {
+	            lot: lot,
+	            prodName :prodName,
+	            empName : empName,
+	        },
+	        beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+	        success: function(result) {
+	        	grid2.resetData(result);
+	        	grid2.refreshLayout();
+	        },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    });
+}
+//검색창
+$('#searchFinishedBtn').on('click',function(){
+	let lot= '';
+	let prodName ='';
+	let empName='';
+	 let optionSelect = $('#finishedSelect :selected').val();
+	    if(optionSelect == 'lot'){
+	        lot = $('#searchFinished').val();
+	    } else if(optionSelect == 'prodName'){
+	    	prodName = $('#searchFinished').val();
+	    } else if(optionSelect == 'empName'){
+	    	empName = $('#searchFinished').val();
+	    } 
+   finishedDetailList(lot,prodName,empName);
+})
+//엔터 클릭시 검색
+$('#searchFinished').on("keyup", function(key){
+    if(key.keyCode == 13){
+    	let lot= '';
+    	let prodName ='';
+    	let empName='';
+    	 let optionSelect = $('#finishedSelect :selected').val();
+    	    if(optionSelect == 'lot'){
+    	        lot = $('#searchFinished').val();
+    	    } else if(optionSelect == 'prodName'){
+    	    	prodName = $('#searchFinished').val();
+    	    } else if(optionSelect == 'empName'){
+    	    	empName = $('#searchFinished').val();
+    	    } 
+           finishedDetailList(lot,prodName,empName);
+    }
+});
+//그리드 호버
+tui.Grid.applyTheme('default', {
+	row:{
+			hover:{
+					background:'#ccc'
+			}
+	}
+})
+finishedDetailList();
+
+</script>
+</html>

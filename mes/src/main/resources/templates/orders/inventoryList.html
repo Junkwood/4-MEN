@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+<style>
+#saveBtn {
+	margin-bottom: 30px;
+	margin-right: 30px;
+}
+.float-end{
+     margin-bottom:30px;
+}
+.inputFloat{
+   margin-bottom:10px;
+   margin-top:20px;
+}
+
+</style>
+</head>
+<body>
+	<div class="container">
+		<h1>제품목록</h1>
+		<div class="inputFloat">
+		<input class="form-control me-2 order-search" type="search"
+			placeholder="제품명 검색" aria-label="Search" id="searchOrder">
+		<button class="btn btn-outline-success" type="button" id="searchBtn">검색</button>
+		</div>
+		<div class="row orderCallTable">
+			<div class="col-12">
+				<div id="grid1"></div>
+			</div>
+		</div>
+		<h1>재고조회</h1>
+		<div class="row orderCallTable">
+			<div class="col-12">
+				<div id="grid2"></div>
+			</div>
+		</div>
+	</div>
+	
+ 
+
+</body>
+<script th:inline="javascript">
+//csrf 토큰 넣을 값 가져오기
+const token = $("meta[name='_csrf']").attr("content")
+const header = $("meta[name='_csrf_header']").attr("content");
+
+	const grid1 = new tui.Grid({
+		el : document.getElementById('grid1'),
+		scrollX : false,
+		scrollY : false,
+		pageOptions : {
+			perPage : 5,
+			useClient : true,
+		},
+		columns : [ {
+			header : '제품코드',
+			name : 'prodCode',
+			align : 'center'
+		}, {
+			header : '제품명',
+			name : 'prodName',
+
+		}, {
+			header : '단위',
+			name : 'unit',
+			align : 'center'
+		}, ],
+
+	});
+	const grid2 = new tui.Grid({
+		el : document.getElementById('grid2'),
+		scrollX : false,
+		scrollY : false,
+		pageOptions: {
+	            perPage: 5,
+	            useClient: true,
+	    },
+		columns : [ {
+			header : 'LOT번호',
+			name : 'lot',
+			align : 'center'
+		}, 
+		{
+			header : '제품코드',
+			name : 'prodCode',
+			align:'center'
+		},
+		{
+			header : '제품명',
+			name : 'prodName',
+			align : 'center'
+		}, 
+		{
+			header : '재고량',
+			name : 'inventory',
+			align : 'right',
+			formatter: function(price){
+	           	  return priceFormat(price.value)+'개';
+	       },
+		},
+	 ],
+	 summary: {
+  			 align: 'center',
+   		 height: 40,
+  			 position: 'bottom', 
+ 	    columnContent: {
+ 	    	prodName	: {
+           	template: function() {
+              	 return '총재고수량';
+            }, 
+       },
+       inventory: {
+           template: function(total) {
+               return priceFormat(total.sum) + '개';
+           }, 
+       },
+   },
+},
+
+});
+	
+
+
+$('#searchBtn').on('click', function(ev) {
+		let prodName = $('#searchOrder').val()
+		prodCommon(prodName);
+		
+	})
+function prodCommon(prodName=''){
+	$.ajax({
+		url : "/flow/prodName",
+		method : "GET",
+		beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+		data : {
+			prodName : prodName,
+		},
+		success : function(result) {
+			grid1.resetData(result);
+		},
+		error : function(error) {
+			console.error('AJAX 요청 실패:', error);
+		}
+	});
+}
+	$('#searchOrder').on("keyup", function(key) {
+		if (key.keyCode == 13) {
+			let prodName = $('#searchOrder').val()
+			$.ajax({
+				url : "/flow/prodName",
+				method : "GET",
+				beforeSend : function(xhr) {
+		            xhr.setRequestHeader(header, token);
+		        },
+				data : {
+					prodName : prodName,
+				},
+				success : function(result) {
+					grid1.resetData(result);
+				},
+				error : function(error) {
+					console.error('AJAX 요청 실패:', error);
+				}
+			});
+		}
+	});
+	//클릭한 제품코드와 제품이름을 담기
+	let prodCode = '';
+	let prodName = '';
+
+	grid1.on('click', function(ev) {
+		if (ev.targetType == 'cell') {
+			prodCode = grid1.getValue(ev.rowKey, 'prodCode');
+			prodName = grid1.getValue(ev.rowKey, 'prodName');
+			$.ajax({
+				url : "/dispatchReady",
+				method : "GET",
+				beforeSend : function(xhr) {
+		            xhr.setRequestHeader(header, token);
+		        },
+				data : {
+					prodCode : prodCode,
+				},
+				success : function(result) {
+					grid2.resetData(result);
+				},
+				error : function(error) {
+					console.error('AJAX 요청 실패:', error);
+				}
+			});
+		}
+	})
+ //금액 포맷 함수('#,###')
+ function priceFormat(price) {
+ 	if(price == null){
+ 		return '0';
+ 	}
+ 	let result = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+ 	return result;
+ }
+prodCommon();
+	
+
+
+</script>
+</html>

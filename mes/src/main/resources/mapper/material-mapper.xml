@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aio.mes.material.mapper.MaterialMapper">
+<select id="showMatOrderList" resultType="MatOrderVO">
+SELECT m.mat_order_code,
+       m.order_name,
+       m.order_date,
+       m.emp_code,
+       e.emp_name,
+       get_mes_sub_code_name(m.order_status) AS order_status
+FROM   mat_order m JOIN emp e
+                     ON (m.emp_code = e.emp_code)
+</select>
+<select id="searchUnCompletedMatOrderList" resultType="MatOrderVO" parameterType="MatOrderDTO">
+SELECT m.mat_order_code,
+       m.order_name,
+       m.order_date,
+       m.emp_code,
+       e.emp_name,
+       get_mes_sub_code_name(m.order_status) AS order_status
+FROM   mat_order m JOIN emp e
+                     ON (m.emp_code = e.emp_code)
+WHERE  m.order_status IN (get_mes_sub_code('요청'), get_mes_sub_code('처리중'))
+<if test="inputVal != '' and inputVal != null">
+	<choose>
+		<when test="radioVal == 'orderName'">
+		AND m.order_name LIKE '%' || #{inputVal} || '%'
+		</when>
+		<when test="radioVal == 'empName'">
+		AND e.emp_name LIKE '%' || #{inputVal} || '%'
+		</when>
+		<otherwise>
+		</otherwise>
+	</choose>
+</if>                        
+ORDER BY m.mat_order_code     
+</select>
+<select id="searchMatOrderList" resultType="MatOrderVO" parameterType="MatOrderDTO">
+SELECT m.mat_order_code,
+       m.order_name,
+       m.order_date,
+       m.emp_code,
+       e.emp_name,
+       get_mes_sub_code_name(m.order_status) AS order_status
+FROM   mat_order m JOIN emp e
+                     ON (m.emp_code = e.emp_code)
+<if test="inputVal != '' and inputVal != null">
+	<choose>
+		<when test="radioVal == 'orderName'">
+		WHERE m.order_name LIKE '%' || #{inputVal} || '%'
+		</when>
+		<when test="radioVal == 'empName'">
+		WHERE e.emp_name LIKE '%' || #{inputVal} || '%'
+		</when>
+		<otherwise>
+		</otherwise>
+	</choose>
+</if>                     
+<choose>
+	<when test="selectVal == null or selectVal == 'ALL'">
+	</when>
+	<otherwise>
+	AND m.order_status IN #{selectVal}
+	</otherwise>
+</choose>         
+ORDER BY m.mat_order_code     
+</select>
+
+<select id="searchMatOrderList2" resultType="MatOrderSearchVO" parameterType="MatOrderSearchDTO">
+SELECT o.mat_order_code,
+       o.order_name,
+       o.emp_code,
+       find_emp_name(o.emp_code) AS emp_name,
+       od.mat_code,
+       find_mat_name(od.mat_code) AS mat_name,
+       od.client_name,
+       od.quantity,
+       o.order_date,
+       od.delivery_date,
+       get_mat_prod_quantity(od.mat_order_detail_code) AS prod_quantity,
+       get_mes_sub_code_name(o.order_status) AS order_status
+FROM   mat_order_detail od JOIN mat_order o
+                             ON(od.mat_order_code = o.mat_order_code)
+<choose>
+	<when test="select1Val == null or select1Val == 'ALL'">
+		WHERE o.order_status IN ('PS1', 'PS2', 'PS3')
+	</when>
+	<otherwise>
+		WHERE o.order_status = #{select1Val}
+	</otherwise>
+</choose>
+                             
+<if test="selectInputVal != null and selectInputVal != ''">
+	<choose>
+		<when test="select2Val == 'orderName'">
+			AND o.order_name LIKE '%' || #{selectInputVal} || '%'
+		</when>
+		<when test="select2Val == 'empName'">
+			AND find_emp_name(o.emp_code) LIKE '%' || #{selectInputVal} || '%'
+		</when>
+		<when test="select2Val == 'matName'">
+			AND find_mat_name(od.mat_code) LIKE '%' || #{selectInputVal} || '%'
+		</when>
+		<when test="select2Val == 'clientName'">
+			AND od.client_name LIKE '%' || #{selectInputVal} || '%'
+		</when>
+		<otherwise>
+		</otherwise>
+	</choose>
+</if>
+<if test="orderEndDate != null and orderEndDate != ''">
+	AND o.order_date BETWEEN TO_DATE(#{orderStartDate}, 'YYYY-MM-DD')
+	                         AND TO_DATE(#{orderEndDate}, 'YYYY-MM-DD')
+</if>
+<if test="deliveryEndDate != null and deliveryEndDate != ''">
+	AND od.delivery_date BETWEEN TO_DATE(#{deliveryStartDate}, 'YYYY-MM-DD')
+	                         						AND TO_DATE(#{deliveryEndDate}, 'YYYY-MM-DD')
+</if>
+ORDER BY o.order_date
+</select>
+<select id="showMatOrderDetailList" resultType="MatOrderDetailVO" parameterType="String">
+SELECT md.mat_order_detail_code,
+       md.mat_order_code,
+       md.mat_code,
+       mat.mat_name,
+       get_mes_sub_code_name(mat.mat_class) AS mat_class,
+       mat.standard,
+       mat.unit,
+       md.client_name,
+       md.quantity,
+       md.delivery_date,
+       md.ent_member_code
+FROM   mat_order_detail md JOIN mat_common mat
+                             ON (md.mat_code = mat.mat_code)
+WHERE  md.mat_order_code = #{matOrderCode}
+</select>
+<select id="getMatOrderInfo" resultType="MatOrderVO" parameterType="String">
+SELECT m.mat_order_code,
+       m.order_name,
+       m.order_date,
+       m.emp_code,
+       e.emp_name,
+       get_mes_sub_code_name(m.order_status) AS order_status
+FROM   mat_order m JOIN emp e
+                     ON (m.emp_code = e.emp_code)
+WHERE  m.mat_order_code = #{matOrderCode}
+</select>
+<select id="showMatCommonList" resultType="MatCommonVO">
+SELECT mat_code,
+       get_mes_sub_code_name(mat_class) AS mat_class,
+       mat_name,
+       standard,
+       unit,
+       safetystock,
+       ent_member_code
+FROM   mat_common
+</select>
+<select id="searchMatCommonList" resultType="MatCommonVO" parameterType="String">
+SELECT mat_code,
+       get_mes_sub_code_name(mat_class) AS mat_class,
+       mat_name,
+       standard,
+       unit,
+       safetystock,
+       ent_member_code
+FROM   mat_common
+WHERE  mat_name LIKE '%' || #{matName} || '%'
+</select>
+<select id="showClientList" resultType="ClientVO">
+SELECT client_code,
+       client_name,
+       client_type,
+       tel,
+       address,
+       client_manager,
+       ent_member_code
+FROM   client       
+</select>
+<select id="searchClientList" resultType="ClientVO" parameterType="String">
+SELECT client_code,
+       client_name,
+       client_type,
+       tel,
+       address,
+       client_manager,
+       ent_member_code
+FROM   client
+WHERE  client_name LIKE '%' || #{clientName} || '%'
+</select>
+<select id="searchInspectableMatOrderDetailsData" resultType="InspectiveMatOrderVO" parameterType="String">
+SELECT matod.mat_order_code,
+       mato.order_name,
+       mat.mat_code,
+       get_mes_sub_code_name(mat.mat_class) AS mat_class,
+       mat.mat_name,
+       matod.mat_order_detail_code,
+       matod.client_name,
+       matod.quantity,
+      (SELECT NVL(SUM(NVL(inspect_quantity, 0)), 0)
+       FROM   mat_inspect
+       WHERE  mat_order_detail_code = matod.mat_order_detail_code) AS "prev_quantity"
+FROM   mat_order_detail matod JOIN mat_order mato
+                                ON (matod.mat_order_code = mato.mat_order_code)
+                              JOIN mat_common mat
+                                ON (matod.mat_code = mat.mat_code)
+WHERE  matod.mat_order_code = #{matOrderCode}
+</select>
+<select id="showInspectedMatDataList" resultType="InspectedMatVO">
+SELECT matod.mat_order_code,
+       mato.order_name,
+       matod.mat_order_detail_code,
+       matod.mat_code,
+       mat.mat_name,
+       matod.client_name,
+       insp.mat_inspect_code,
+       insp.inspect_quantity,
+       insp.error_quantity,
+       insp.note,
+       find_emp_name(insp.emp_code) emp_name, 
+       insp.emp_code,
+       insp.inspect_date,
+       get_mes_sub_code_name(mat.mat_class) AS mat_class,
+       matod.quantity,
+       (SELECT NVL(SUM(NVL(inspect_quantity, 0)), 0)
+       FROM   mat_inspect
+       WHERE  mat_order_detail_code = matod.mat_order_detail_code) AS "prev_quantity"
+FROM   mat_order_detail matod JOIN mat_order mato
+                                ON (matod.mat_order_code = mato.mat_order_code)
+                              JOIN mat_common mat
+                                ON (matod.mat_code = mat.mat_code)
+                              JOIN mat_inspect insp
+                                ON (matod.mat_order_detail_code = insp.mat_order_detail_code)
+</select>
+<select id="searchInspectedMatOrderData" resultType="InspectedMatVO" parameterType="String">
+SELECT matod.mat_order_code,
+       mato.order_name,
+       matod.mat_order_detail_code,
+       matod.mat_code,
+       mat.mat_name,
+       matod.client_name,
+       insp.mat_inspect_code,
+       insp.inspect_quantity,
+       insp.error_quantity,
+       insp.note,
+       find_emp_name(insp.emp_code) emp_name, 
+       insp.emp_code,
+       insp.inspect_date,
+       get_mes_sub_code_name(mat.mat_class) AS mat_class,
+       matod.quantity,
+       (SELECT NVL(SUM(NVL(inspect_quantity, 0)), 0)
+       FROM   mat_inspect
+       WHERE  mat_order_detail_code = matod.mat_order_detail_code) AS "prev_quantity"
+FROM   mat_order_detail matod JOIN mat_order mato
+                                ON (matod.mat_order_code = mato.mat_order_code)
+                              JOIN mat_common mat
+                                ON (matod.mat_code = mat.mat_code)
+                              JOIN mat_inspect insp
+                                ON (matod.mat_order_detail_code = insp.mat_order_detail_code)
+WHERE  insp.mat_inspect_code = #{matInspectCode}
+</select>
+<select id="checkStoredMatDataIsHold" resultType="MatHoldVO" parameterType="String">
+SELECT ho.mat_hold_code,
+       ho.lot,
+       ho.work_instruct_detail_code,
+       ho.hold_quantity,
+       ho.progress
+FROM   mat_hold ho JOIN mat_store sto
+                     ON (ho.lot = sto.lot)
+WHERE  sto.mat_inspect_code = #{matInspectCode}
+</select>
+<select id="searchInspectedMatDataList" resultType="InspectedMatVO" parameterType="String">
+SELECT matod.mat_order_code,
+       mato.order_name,
+       matod.mat_order_detail_code,
+       matod.mat_code,
+       mat.mat_name,
+       matod.client_name,
+       insp.mat_inspect_code,
+       insp.inspect_quantity,
+       insp.error_quantity,
+       insp.note,
+       find_emp_name(insp.emp_code) emp_name, 
+       insp.emp_code,
+       insp.inspect_date,
+       get_mes_sub_code_name(mat.mat_class) AS mat_class,
+       matod.quantity,
+       (SELECT NVL(SUM(NVL(inspect_quantity, 0)), 0)
+       FROM   mat_inspect
+       WHERE  mat_order_detail_code = matod.mat_order_detail_code) AS "prev_quantity"
+FROM   mat_order_detail matod JOIN mat_order mato
+                                ON (matod.mat_order_code = mato.mat_order_code)
+                              JOIN mat_common mat
+                                ON (matod.mat_code = mat.mat_code)
+                              JOIN mat_inspect insp
+                                ON (matod.mat_order_detail_code = insp.mat_order_detail_code)
+WHERE  mato.order_name LIKE '%' || #{matOrderName} || '%'
+</select>
+<select id="searchInspectedMatDataPerDate" resultType="InspectedMatVO" parameterType="String">
+SELECT matod.mat_order_code,
+       mato.order_name,
+       matod.mat_order_detail_code,
+       matod.mat_code,
+       mat.mat_name,
+       matod.client_name,
+       insp.mat_inspect_code,
+       insp.inspect_quantity,
+       insp.error_quantity,
+       insp.note,
+       find_emp_name(insp.emp_code) emp_name, 
+       insp.emp_code,
+       insp.inspect_date,
+       get_mes_sub_code_name(mat.mat_class) AS mat_class,
+       matod.quantity,
+       (SELECT NVL(SUM(NVL(inspect_quantity, 0)), 0)
+       FROM   mat_inspect
+       WHERE  mat_order_detail_code = matod.mat_order_detail_code) AS "prev_quantity"
+FROM   mat_order_detail matod JOIN mat_order mato
+                                ON (matod.mat_order_code = mato.mat_order_code)
+                              JOIN mat_common mat
+                                ON (matod.mat_code = mat.mat_code)
+                              JOIN mat_inspect insp
+                                ON (matod.mat_order_detail_code = insp.mat_order_detail_code)
+WHERE  TRUNC(insp.inspect_date) = TO_DATE(#{dateString}, 'yyyy-MM-dd')
+</select>
+
+<select id="updateMatOrderList" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call update_mato_list(#{p_mato_list, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=MATO_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.MatOrderListTypeHandler},
+ 	                        #{p_output_msg, jdbcType=VARCHAR, mode=OUT}) }
+ </select>
+ <select id="insertMatOrderDetailList" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call insert_matod_list(#{p_mato_list, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=MATO_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.MatOrderListTypeHandler},
+ 	                         #{p_matod_insert_list, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=MATOD_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.MatOrderDetailListTypeHandler},
+ 	                         #{p_output_msg, jdbcType=VARCHAR, mode=OUT}) }
+ </select>
+  <select id="deleteMatOrderDetailList" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call delete_matod_list(#{p_mato_list, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=MATO_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.MatOrderListTypeHandler},
+ 	                         #{p_matod_delete_list, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=MATOD_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.MatOrderDetailListTypeHandler},
+ 	                         #{p_output_msg, jdbcType=VARCHAR, mode=OUT}) }
+ </select>
+  <select id="updateMatOrderDetailList" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call update_matod_list(#{p_matod_update_list, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=MATOD_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.MatOrderDetailListTypeHandler},
+ 	                         #{p_output_msg, jdbcType=VARCHAR, mode=OUT}) }
+ </select>
+ <select id="saveNewMatOrder" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call insert_new_mat_order(#{p_mato_map, javaType=Object, jdbcType=STRUCT, jdbcTypeName=MATO_MAP, mode=IN, typeHandler=com.aio.mes.mybatis.config.MatOrderObjectTypeHandler},
+ 	                            #{p_matod_insert_list, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=MATOD_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.MatOrderDetailListTypeHandler},
+ 	                            #{p_output_msg, jdbcType=VARCHAR, mode=OUT}) }
+ </select>
+ 
+ <select id="insertInspectiveMatoList" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call insert_inspective_mat_order(#{p_insp_mato_list, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=INSP_MATO_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.InspMatoListTypeHandler},
+ 	                         			#{p_output_msg, jdbcType=VARCHAR, mode=OUT})
+ </select>
+ 
+ <select id="updateInspectedData" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call update_inspected_mat_order(#{p_insp_mato_list, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=INSP_UPDATE_MATO_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.InspUpdateMatoListTypeHandler},
+ 	                                  #{p_output_msg, jdbcType=VARCHAR, mode=OUT})
+ </select>
+ 
+ <select id="deleteInspectedData" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call delete_inspected_mat_order(#{p_insp_mato_list, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=INSP_UPDATE_MATO_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.InspUpdateMatoListTypeHandler},
+ 	                                  #{p_output_msg, jdbcType=VARCHAR, mode=OUT})
+ </select>
+ <select id="removeMatOrder" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+	  	{ call remove_mat_order(#{p_mat_order_code, javaType=java.lang.String, jdbcType=VARCHAR, mode=IN},
+	  	                        #{p_output_msg, jdbcType=VARCHAR, mode=OUT}) }
+</select>
+<select id="searchNeedSupplyMatList" parameterType="String" resultType="NeedSupplyMatVO">
+SELECT mc.mat_code,
+       find_mat_name(mc.mat_code) AS mat_name,
+       mc.safetystock,
+       get_current_mat_quantity(mat_code) - safetystock AS safety_stock_per_quantity,
+       (SELECT SUM(get_used_mat_per_manu_plan(prod_code, mc.mat_code) * plan_quantity)
+        FROM   manu_plan_detail
+        WHERE  NOT process_status = get_mes_sub_code('처리완료')) AS manu_plan_per_quantity
+FROM   mat_common mc
+<if test="matSupplyNeedInputVal != null and matSupplyNeedInputVal != ''">
+WHERE mc.mat_name LIKE '%' || #{matSupplyNeedInputVal} || '%'
+</if>
+</select>
+</mapper>

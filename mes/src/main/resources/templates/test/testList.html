@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+    <!-- https://github.com/nhn/tui.grid/blob/master/packages/toast-ui.grid/examples/example08-date-picker.html -->
+  <style>
+   body {
+            background-color: #e9ecef;
+        }
+  #startpicker-container1,#endpicker-container1,#startpicker-container2,#endpicker-container2{
+         position: relative;
+ 		 z-index: 9999;
+    }
+    .order-select1{
+       display: inline;
+	   width: 16%;
+	   height:35px;
+	   margin-right:10px;
+	   margin-bottom:10px;
+    }
+    .order-search1{
+       display: inline;
+	   width: 16%;
+	   height:35px;
+	   margin-right:10px;
+	   margin-bottom:10px;
+    }
+    .searchBtn{
+       float:right;
+       width: 15%;
+       height:43px;
+       margin-right:10px;
+    }
+    .search {
+            width:60%;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            box-shadow: 4px 4px 4px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom:30px;
+        }
+    .search1 {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            box-shadow: 4px 4px 4px 4px rgba(0, 0, 0, 0.1);
+        }
+        .search h3 {
+            margin-bottom: 20px;
+        }
+  </style>
+  </head>
+<body>
+   <div class="container">
+   
+		<h1 class="fw-bold py-1 mb-4 text-muted fw-light">검사조회</h1>
+		<div class="search">
+		<h3 class="fw-bold py-1 mb-4 text-dark fw-light">검색조건</h3>
+            <div class="row">
+                         <select class="form-select order-select1"
+							aria-label="Default select example" id=orderSelect1>
+							<option selected value="orderCode">검사코드</option>
+							<option value="orderName">검사명</option>
+							<option value="clientName">업체명</option>
+						</select> 
+						<input class="form-control order-search1" type="search"
+							placeholder="검색" aria-label="Search" id="searchOrder1">
+     
+           
+                         <select class="form-select order-select1"
+							aria-label="Default select example" id=orderSelect2>
+							<option selected value="prodName">제품명</option>
+							<option value="processStatus">주문상태</option>
+							<option value="empName">담당자</option>
+						</select> 
+						<input class="form-control order-search1" type="search"
+							placeholder="검색" aria-label="Search" id="searchOrder2">
+   
+      
+				</div>		
+           
+            <!-- ================================================= -->
+     <p class="fw-bold text-dark fw-light">주문등록일자</p>
+    <div class="tui-datepicker-input tui-datetime-input tui-has-focus">
+        <input id="startpicker-input1" type="text" aria-label="Date">
+        <span class="tui-ico-date"></span>
+        <div id="startpicker-container1"></div>
+    </div>
+    <span>~</span>
+    <div class="tui-datepicker-input tui-datetime-input tui-has-focus">
+        <input id="endpicker-input1" type="text" aria-label="Date">
+        <span class="tui-ico-date"></span>
+        <div id="endpicker-container1"></div>
+    </div>
+     <p class="fw-bold text-dark fw-light">입고일자</p>
+    <div class="tui-datepicker-input tui-datetime-input tui-has-focus">
+        <input id="startpicker-input2" type="text" aria-label="Date">
+        <span class="tui-ico-date"></span>
+        <div id="startpicker-container2" style="margin-left: -1px;"></div>
+    </div>
+    <span>~</span>
+    <div class="tui-datepicker-input tui-datetime-input tui-has-focus">
+        <input id="endpicker-input2" type="text" aria-label="Date">
+        <span class="tui-ico-date"></span>
+        <div id="endpicker-container2" style="margin-left: -1px;"></div>
+    </div>
+        <button class="btn btn-outline-primary searchBtn" type="button" id="searchBtn">검색</button>
+     </div>
+    <!-- ===================================================== -->
+		  <div class="search1">
+		   <button class="btn btn-outline-success float-end" type="button" id="excel">XLSX</button>
+		  <h3 class="fw-bold py-1 mb-4 text-dark fw-light">주문목록</h3>
+		   <div class="row orderCallTable">
+			   <div class="col-12">
+				    <div id="grid1"></div>
+			   </div>
+			</div>
+			</div>
+	</div>
+</body>
+<script th:inline="javascript">
+	//================================================================================
+var today = new Date();
+var picker1 = tui.DatePicker.createRangePicker({
+    startpicker: {
+        input: '#startpicker-input1',
+        container: '#startpicker-container1'
+    },
+    endpicker: {
+        input: '#endpicker-input1',
+        container: '#endpicker-container1'
+    },
+    format: 'YYYY-MM-dd',
+});
+
+var picker2 = tui.DatePicker.createRangePicker({
+    startpicker: {
+        input: '#startpicker-input2',
+        container: '#startpicker-container2'
+    },
+    endpicker: {
+        input: '#endpicker-input2',
+        container: '#endpicker-container2'
+    },
+    format: 'YYYY-MM-dd',
+});
+
+picker1.on('change:end', () => {
+    console.log(123);
+})
+// 상세 그리드 설정
+     const   grid1 = new tui.Grid({
+            el: document.getElementById('grid-main-bottom'), 
+            scrollX: true,
+            scrollY: true,
+            rowHeaders: [  { type: 'rowNum' }, { type: 'checkbox' }],
+            pageOptions: { useClient: true, perPage: 10 },
+            columns: [
+                { header: '검사코드', name : 'testProcessCode' , align: 'center' , hidden: true}, 
+                { header: '작업지시코드', name: 'workInstructDetailCode' , align: 'center' }, 
+                { header: '작업진행코드' , name :'workProgressCode', align:'center' , hidden: true}, 
+                { header: '제품명', name: 'prodName' , align: 'center' },
+                { header: '검사명', name: 'testName' , align: 'center' }, 
+                //{ header: '검사 담당자', name: 'empCode' , align: 'center' }, 
+                { header: '검사등록일자', name: 'testDate' , editor: 'datePicker', align: 'center' }, 
+                { header: '검사기준', name:'passCriteria' , align: 'center' },
+                { header: '검사량', name: 'testQuantity' , align: 'center' ,editor : 'text' ,validation : {
+                    dataType: 'number',
+                    required:'true'
+                   }},
+                { header: '불량량', name: 'errorQuantity' ,editor : 'text', align: 'center' ,validation : {
+                    dataType: 'number',
+                    required:'true'
+                   }}, 
+                { header: '합격량', name: 'passQuantity' , align: 'center' }, 
+                { header: '비고', name: 'note' , align: 'center' , editor: 'text'}, 
+                { header: '검사유무', name:'status' , align: 'center'},
+                { header: '검사흐름도코드', name: 'testFlowCode' , editor : 'text', align: 'center' , hidden: true},
+                { header: '기업코드', name:'entMemberCode' , align: 'center' , hidden: true} 
+            ],
+
+            // 요약 행 설정
+            summary: {
+                height: 20,
+                position: 'bottom', 
+                columnContent: {
+                    passQuantity: {
+                        template: function(valueMap) { 
+                            if (typeof grid2 !== 'undefined' && grid2 !== null) {
+                                let data = grid2.getData(); // 그리드의 데이터 가져오기
+                                let lastRow = data[data.length - 1] || {}; // 마지막 행의 데이터 가져오기
+                                return `총 생산량: ${lastRow.passQuantity || 0}`; // 마지막 행의 합격량을 표시
+                            }
+                            return '총 생산량: 0'; // 데이터가 없을 경우 'TOTAL: 0'을 표시
+                        }
+                    },
+                    errorQuantity: {
+                        template: function(valueMap) {
+                          return `불량량: ${valueMap.sum}`;
+                        }
+                      }
+                    }
+                }
+            
+        });
+//===================================================================================
+function orderDetailList(testProcessCode='',workInstructDetailCode='',workProgressCode='',prodName='',testDate='',passCriteria='',
+		testQuantity='',errorQuantity='',passQuantity='',note='' ,status= '' ,testFlowCode= '') {
+    $.ajax({
+        url: "/test/inspectDetailList2",
+        method: "GET",
+        data: {
+        	testProcessCode: testProcessCode,
+        	workInstructDetailCode: workInstructDetailCode,
+        	workProgressCode: workProgressCode,
+        	prodName : prodName,
+        	empName:empName,
+        	testDate : testDate,
+        	testQuantity : testQuantity,
+        	errorQuantity : errorQuantity,
+        	passQuantity : passQuantity,
+        	note : note,
+        	status : status,
+        	testFlowCode : testFlowCode
+        },
+        success: function(result) {
+        	grid1.resetData(result);
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+$('#searchBtn').on('click', function(){
+    let orderCode = '';
+    let orderName = '';
+    let prodName = '';
+    let clientName = '';
+    let empName='';
+    let processStatus=''
+    let optionSelect1 = $('#orderSelect1 :selected').val();
+    let optionSelect2 = $('#orderSelect2 :selected').val();
+    let registrationDate1 = $('#startpicker-input1').val();
+    let registrationDate2 = $('#endpicker-input1').val();
+    let dueDate1 = $('#startpicker-input2').val();
+    let dueDate2 = $('#endpicker-input2').val();
+    if(optionSelect1 == 'orderCode'){
+        orderCode = $('#searchOrder1').val();
+    } else if(optionSelect1 == 'orderName'){
+        orderName = $('#searchOrder1').val();
+    } else if(optionSelect1 == 'clientName'){
+        clientName = $('#searchOrder1').val();
+    }
+    if(optionSelect2=='prodName'){
+    	prodName = $('#searchOrder2').val();
+    } else if(optionSelect1=='processStatus'){
+    	processStatus = $('#searchOrder2').val();
+    } else if(optionSelect1=='empName'){
+    	empName = $('#searchOrder2').val();
+    }
+    orderDetailList(orderCode, orderName, prodName,clientName,empName,
+    		        processStatus,registrationDate1,registrationDate2,
+    		        dueDate1,dueDate2);
+    $('#searchOrder').val('');
+});
+//엑셀 다운로드.
+const topOptions = {
+			  includeHiddenColumns: true,
+			  onlySelected: false,
+			  fileName: '주문 정보 조회',
+			};
+$('#excel').on('click',function(){
+	grid1.export('xlsx',topOptions);
+})
+//금액 포맷 함수('#,###')
+ function priceFormat(price) {
+ 	if(price == null){
+ 		return '0';
+ 	}
+ 	let result = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+ 	return result;
+ }
+orderDetailList();
+</script>
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+    <!-- https://github.com/nhn/tui.grid/blob/master/packages/toast-ui.grid/examples/example08-date-picker.html -->
+ <style>
+   #searchBtn{
+     margin-left:5px;
+   }
+   .optionSize{
+       display: inline;
+	   width: 13%;
+	   margin-right:10px;
+	   margin-bottom:10px;
+    }
+    #startpicker-container1,#endpicker-container1,#startpicker-container2,#endpicker-container2{
+       position: relative;
+ 		 z-index: 9999;
+    }
+    .inputSize{
+     display: inline;
+	   width: 18%;
+	   margin-bottom:10px;
+    }
+    .inputSize1{
+        display: inline;
+	   width: 48%;
+	   margin-bottom:10px;
+    }
+    .float-end{
+       margin-top:30px;
+    }
+ </style>
+ 
+  </head>
+  
+<body>
+  <div class="container">
+		<h1>설비 수리 등록</h1>
+        <div class="float-end">
+						<input class="form-control me-2 inputSize1" type="search"
+						placeholder="설비명검색" aria-label="Search" id="searchOrder1">
+			<input type='button' class="btn btn-outline-primary" value="저장" id="saveBtn">
+    </div>
+    
+		   <div class="row orderCallTable">
+			   <div class="col-12">
+				    <div id="grid1"></div>
+			   </div>
+			</div>
+			<h1>설비 수리 처리</h1>
+			<div class="float-end">처리일자
+			
+		  <div class="tui-datepicker-input tui-datetime-input tui-has-focus">
+        	<input id="startpicker-input2" type="text" aria-label="Date">
+       		<span class="tui-ico-date"></span>
+        	<div id="startpicker-container2" style="margin-left: -1px;"></div>
+    </div>
+    <span>~</span>
+    <div class="tui-datepicker-input tui-datetime-input tui-has-focus">
+        <input id="endpicker-input2" type="text" aria-label="Date">
+        <span class="tui-ico-date"></span>
+        <div id="endpicker-container2" style="margin-left: -1px;"></div>
+    </div>
+						<input class="form-control me-2 inputSize" type="search"
+						placeholder="설비명검색" aria-label="Search" id="searchOrder2">
+			<input type='button' class="btn btn-outline-primary" value="저장" id="saveBtn2">
+			<input type='button' class="btn btn-outline-danger" id="minusBtn" value="ㅡ">
+    </div>
+			<div class="row orderCallTable">	  
+				<div class="col-12">
+					 <div id="grid2"></div>
+				</div>
+			</div>
+		
+		<div class="modal fade" id="Sucess-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  			<div class="modal-dialog modal-dialog-centered">
+   				 <div class="modal-content">
+      				<div class="modal-header">
+      				  <h5 class="modal-title" id="exampleModalLabel">등록 완료</h5>
+     			   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      				</div>
+      <div class="modal-body">
+       		 <div style="text-align: center;">
+        		  <img src="/images/smileImg.png" width="200" alt="Smile Image">
+          			<h3 style="margin-top: 20px; font-family: 'Noto Sans KR', sans-serif;">등록이 완료되었습니다.</h3>
+        		</div>
+      </div>
+      <div class="modal-footer">
+      	  <button type="button" class="btn btn-outline-success" id="nextLevel">등록 완료</button>
+      </div>
+    </div>
+  </div>
+</div>	
+	</div>
+	
+</body>
+<script th:inline="javascript">
+//csrf 토큰 넣을 값 가져오기
+const token = $("meta[name='_csrf']").attr("content")
+const header = $("meta[name='_csrf_header']").attr("content");
+let pList=[];
+let empCode =[[${#authentication.principal.empCode}]];
+	//================================================================================
+var today = new Date();
+
+var picker2 = tui.DatePicker.createRangePicker({
+    startpicker: {
+        date: today,
+        input: '#startpicker-input2',
+        container: '#startpicker-container2'
+    },
+    endpicker: {
+        date: today,
+        input: '#endpicker-input2',
+        container: '#endpicker-container2'
+    },
+    format: 'YYYY-MM-dd',
+});
+//===================================================================================
+const grid1 = new tui.Grid({
+        el: document.getElementById('grid1'),
+        scrollX: false,
+        scrollY: true,
+        bodyHeight: 200,
+        rowHeaders: [
+    	    { type: 'rowNum', align: 'center'},
+    	  ],
+        columns: [
+            { header: '설비코드', name: 'facCode',align:'center'},
+            { header: '설비명', name: 'facName'},
+            { header: '수리구분', 
+            	name: 'repClassCode',
+            	align:'center',
+            	formatter: 'listItemText',
+           	 editor: {
+                    type: 'select',
+                    options: {
+                         listItems: pList
+                              }
+                     }
+            },
+            { header: '고장증상', name: 'breakdown',editor:'text'},
+            { header: '수리요청일자', name: 'repRequestDate',editor:'datePicker',align:'center'},
+        ],
+    });
+const grid2 = new tui.Grid({
+    el: document.getElementById('grid2'),
+    scrollX: false,
+    scrollY: false,
+    pageOptions: {
+        perPage: 5,
+        useClient: true,
+    },
+    rowHeaders: [
+    	  'checkbox',
+	    { type: 'rowNum', align: 'center'},
+	  ],
+    columns: [
+        { header: '수리코드', name: 'repNo'},
+        { header: '설비코드', name: 'facCode',align:'center'},
+        { header: '설비명', name: 'facName'},
+        { header: '수리구분', name: 'repClassCode',align:'center'},
+        { header: '고장증상', name: 'breakdown'},
+        { header: '수리내역', name: 'repHistory',editor:'text'},
+        { header: '수리요청일자', name:'repRequestDate',align:'center'},
+        { header: '비고', name: 'note',editor:'text'},
+    ],
+});
+grid2.hideColumn('repNo');
+function ajaxGrid1Display(facName=''){
+	$.ajax({
+	        url: "/facility/basicList",
+	        method: "GET",
+	        beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+	        data: {
+	        	facName: facName,
+	        },
+	        beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+	        success: function(result) {
+	            grid1.resetData(result);
+	            grid1.refreshLayout();
+	        },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    });
+}
+//인풋창에 누를때마다 검색조건
+$('#searchOrder1').on("keyup", function(key){
+    if(key.keyCode == 13){
+        let facName = $('#searchOrder1').val();
+        ajaxGrid1Display(facName)
+    }
+});
+function ajaxOptionList(){
+	$.ajax({
+        url: "/facility/repairOptionList",
+        method: "GET",
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+        	let objList = result;
+        	objList.forEach(function(element){
+        		let obj = {text:element.subCodeName,value:element.subCode}
+        		pList.push(obj);
+        		ajaxGrid1Display();
+        	})
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+} 
+//등록
+$('#saveBtn').on('click',function(ev){
+	const changes = grid1.getModifiedRows();
+	let valid= false;
+	for(let obj of changes.updatedRows){
+		obj.empCode=empCode;
+	}
+	if(changes.updatedRows.length<1){
+		toastr.error('등록한 값이 없습니다.')
+		return;
+	}
+	changes.updatedRows.forEach(row => {
+		
+		if(!row.repClassCode||row.repClassCode.trim()===''){
+			toastr.error('수리구분을 선택하세요')
+			valid= true;
+			return;
+		}
+		if(!row.breakdown || row.breakdown.trim()===''){
+			toastr.error('고장증상을 작성하세요')
+			valid= true;
+			return;
+		}
+		if(!row.repRequestDate || row.repRequestDate.trim()===''){
+			toastr.error('요청일자를 작성하세요')
+			valid= true;
+			return;
+		}
+		if(row.repRequestDate < getCurrentDate()){
+			toastr.error('금일보다 전에 요청을 할 수는 없습니다.')
+			valid=true;
+			return;
+		}
+	})
+	if(valid){
+		return;
+	}
+		$.ajax({
+	        url: "/facility/repairRequest",
+	        method: "post",
+	        beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+	        data : JSON.stringify(changes.updatedRows),
+	        contentType: 'application/json',
+	        success: function(result) {
+	            $('#Sucess-modal h3').text("등록이 완료되었습니다.")
+	           	$('#nextLevel').text('등록완료')
+	        	$('#Sucess-modal').modal('show');
+	            },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    }); 
+})
+// 현재 날짜를 가져오는 함수
+     function getCurrentDate() {
+         const today = new Date();
+         const year = today.getFullYear();
+         let month = today.getMonth() + 1;
+         let day = today.getDate();
+         month = month < 10 ? '0' + month : month;
+         day = day < 10 ? '0' + day : day;
+         return year + '-' + month + '-' + day;
+ }
+$('#nextLevel').on('click',function(ev){
+    $('#Sucess-modal').modal('hide');
+})
+
+$('#Sucess-modal').on('hidden.bs.modal', function (e) {
+     window.location.href = '/facility/repair';
+});
+//그리드2 데이터출력 
+function ajaxGrid2Display(facName='',repRequestDate1='',repRequestDate2=''){
+	 $.ajax({
+	        url: "/facility/repProccessDisplay",
+	        method: "GET",
+	        beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+	        data: {
+	        	facName: facName,
+	        	repRequestDate1: repRequestDate1,
+	        	repRequestDate2: repRequestDate2
+	        },
+	        success: function(result) {
+	            grid2.resetData(result);
+	            grid2.refreshLayout();
+	        },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    });
+}
+//달력이 바뀔때마다 검색조건
+picker2.on('change:end', () => {
+    let repRequestDate1 = $('#startpicker-input2').val();
+    let repRequestDate2 = $('#endpicker-input2').val();
+    let facName = $('#searchOrder2').val();
+    ajaxGrid2Display(facName,repRequestDate1,repRequestDate2)
+})
+//인풋창에 누를때마다 검색조건
+$('#searchOrder2').on("keyup", function(key){
+    if(key.keyCode == 13){
+    	let repRequestDate1 = $('#startpicker-input2').val();
+        let repRequestDate2 = $('#endpicker-input2').val();
+        let facName = $('#searchOrder2').val();
+        ajaxGrid2Display(facName,repRequestDate1,repRequestDate2)
+    }
+});
+//행제거
+$('#minusBtn').on('click', function(ev){
+    let selectedRows = grid2.getCheckedRows();
+    if(selectedRows.length > 0){
+        for(let i = selectedRows.length - 1; i >= 0; i--){
+            grid2.removeRow(selectedRows[i].rowKey);
+        }
+    } else {
+        toastr.error('선택된 행이 없습니다.');
+    }
+    
+});
+//등록
+$('#saveBtn2').on('click',function(ev){
+	const changes = grid2.getModifiedRows();
+	let valid= false;
+	if(changes.updatedRows.length<1){
+		toastr.error('등록한 값이 없습니다.')
+		return;
+	}
+	for(let obj of changes.updatedRows){
+		obj.empCode=empCode;
+	}
+	changes.updatedRows.forEach(row => {
+		
+		if(!row.repHistory || row.repHistory.trim()===''){
+			toastr.error('수리내역을 기입하세요')
+			valid= true;
+			return;
+		}
+	})
+	if(valid){
+		return;
+	}
+	
+		$.ajax({
+	        url: "/facility/repairResult",
+	        method: "post",
+	        beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+	        data : JSON.stringify({modify:changes.updatedRows,
+									drop:changes.deletedRows}),
+	        contentType: 'application/json',
+	        success: function(result) {
+	            $('#Sucess-modal h3').text("등록이 완료되었습니다.")
+	           	$('#nextLevel').text('등록완료')
+	        	$('#Sucess-modal').modal('show');
+	            },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    }); 
+})
+ajaxGrid2Display();
+ajaxOptionList();
+</script>
+</html>

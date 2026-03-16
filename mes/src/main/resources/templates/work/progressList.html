@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/kiosk_layout}"
+      layout:fragment="Content">      
+<link th:href="@{/css/saveProgress.css}" rel="stylesheet">
+      <style>
+        .btn-lg {
+           height: 300px;
+           width: 400px;
+           margin-right:40px;
+           margin-top: 50px;
+         }
+         .tui-grid-cell.selected-row {
+         background-color: #FFD700 !important; 
+         }
+         .tui-grid-cell-row-header {
+          display: none;
+         }
+         .container kiosk {
+          margin : 0;
+          padding: 0;
+         }
+      </style>
+<body>
+
+  <div class="Container kiosk">
+  	<!-- 상단 nav -->
+    <div class="bg-primary header-div">
+      <button type="button" id="go-back">
+        <img th:src="@{/images/backward.png}" alt="뒤로가기" onClick="history.go(-1)">
+      </button>
+      <button type="button" id="go-home">
+        <img th:src="@{/images/home.png}" alt="홈으로" onClick="location.href='/'">
+      </button>
+    </div>
+    
+    <br>
+
+   <div class="col-12">
+    <br>
+  </div>
+  <div style="text-align: center;">
+    <span style="font-size: xx-large; font-weight: bold;">작업자 선택</span>
+  </div>
+   <div class="row"><!--작업지시 목록불러오기-->
+    <div class="col-4">
+      <br>
+    </div>
+    <div class="col-4">
+      <div id="grid3" style="font-size: x-large;"></div>
+    </div>
+    <div class="col-4">
+      <br>
+    </div>
+    <div class="col-12">
+      <br>
+        <span style="font-size: xx-large; font-weight: bold;">　제품명</span>
+        <select class="form-select-lg" name="prod" id="prodName">
+          <option value="%" selected>전체</option>
+        </select>
+        <span style="font-size: xx-large; font-weight: bold;">공정명</span>
+        <select class="form-select-lg" name="proc" id="procName">
+          <option value="%" selected>전체</option>
+        </select>
+     </div>
+     <div class="col-12">
+      <br>
+    </div>
+    <div class="col-12">
+         <div id="grid"></div>
+    </div>
+    <div class="col-12">
+      <br>
+    </div>
+    <div style="text-align: center;">
+      <button class="btn btn-outline-primary" id="inputBtn">투입량 입력</button>
+   </div>
+  <div id="workProgressCode" style="display: none;" th:text="${workProgressCode}"></div>
+</div>
+    <div style="display: none;" sec:authorize="isAuthenticated()">
+      <span id="empCode" th:text="${#authentication.principal.empCode}"></span>
+      <span id="empName" th:text="${#authentication.principal.empName}"></span>
+  </div>
+  </div>
+  <!-- 키패드 모달 -->
+  <div class="modal fade" id="keypad-Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-header-title">
+            <span style="text-align: left;">설비 선택 및투입량 입력 </span>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div style="text-align: left;">
+            <span style="font-size: large; font-weight: bold;">설비 선택</span>
+          </div>
+          <div class="container" style="background-color:white;">
+              <div id="grid2"></div>
+        <div>
+          <span style="font-size: large; font-weight: bold;">투입량 입력</span>
+          <br>
+          <span style="font-size: large; font-weight: bold;" id="displayQ"></span>
+        </div>
+        <div class="btn-group-vertical" role="group">
+               <input class="form-control" id="ShortCode" style="font-size: x-large;">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(1)"style="font-size: x-large;">1</button>
+                    <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(2)"style="font-size: x-large;">2</button>
+                    <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(3)"style="font-size: x-large;">3</button>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(4)"style="font-size: x-large;">4</button>
+                    <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(5)"style="font-size: x-large;">5</button>
+                    <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(6)"style="font-size: x-large;">6</button>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(7)"style="font-size: x-large;">7</button>
+                    <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(8)"style="font-size: x-large;">8</button>
+                    <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(9)"style="font-size: x-large;">9</button>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-danger py-4" onclick="KeyPadWrite(-1)"style="font-size: x-large;">&lt;</button>
+                    <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(0)"style="font-size: x-large;">0 </button>
+                  <button type="button" class="btn btn-outline-success py-4" id="input"style="font-size: x-large;">√</button>
+                </div>
+        </div>
+      </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="perf-Modal" tabindex="-1"
+  aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-4 order-search-title textInline" 
+          id="exampleModalLabel">실적 조회</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"
+          aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: left;">
+          <span style="font-size: large; font-weight: bold;">아직 종료되지 않은 작업이 있습니다.</span>
+        </div>
+        <div class="row">
+          <div class="col-12">
+            <div id="grid4"></div>
+          </div>
+        </div>
+        <div style="text-align: left;">
+          <span style="font-size: large; font-weight: bold;">이어서 진행하시겠습니까?</span>
+        </div>
+        <div style="text-align: center;">
+          <button class="btn btn-outline-primary" id="perfYes">예</button>
+          <button type="button" class="btn btn-outline-danger" id="perfNo" data-bs-dismiss="modal" aria-label="Close">아니오</button>
+       </div>
+        <div class="modal-footer">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="check-Modal" tabindex="-1"
+aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered modal-md">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h1 class="modal-title fs-4 order-search-title textInline" 
+        id="exampleModalLabel">확인</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"
+        aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div style="text-align: left;">
+        <span style="font-size: large; font-weight: bold;" id="checkSum"></span>
+      </div>
+      <div class="row">
+      </div>
+      <div style="text-align: left;">
+        <span style="font-size: large; font-weight: bold;">이대로 진행하시겠습니까?</span>
+      </div>
+      <div style="text-align: center;">
+        <button class="btn btn-outline-primary" id="progYes">예</button>
+        <button type="button" class="btn btn-outline-danger" id="progNo" data-bs-dismiss="modal" aria-label="Close">아니오</button>
+     </div>
+      <div class="modal-footer">
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script th:inline="javascript">
+  //기업코드 가져오기
+    let workProgressCode = null;
+    let facCode=null;
+    let empCode=null;
+    tui.Grid.applyTheme('default', {
+    	row:{
+    			hover:{
+    					background:'#2E9AFE'
+    			}
+    	}
+    })
+    
+      //작업지시상세등록 테이블        
+      const grid = new tui.Grid({
+      el: document.getElementById('grid'),
+      bodyHeight: 280,
+      scrollX: false,
+      scrollY: true,
+      rowHeaders: [{type:'checkbox', width:'0'}],
+      columns: [
+        {
+          header: '지시명',
+          name: 'workName',
+          align : 'center'
+        },
+        {
+          header: '공정순서',
+          name: 'procNum',
+          align : 'center'
+        },
+        {
+          header: '제품명',
+          name: 'prodName',
+          align : 'center'
+        },
+        {
+          header: '지시일자',
+          name: 'registrationDate',
+          width : 150,
+          align : 'center'
+        },
+        {
+         header:'완료일자',
+         name:'manuEndDate',
+         width : 150,
+         align : 'center'
+        },
+        {
+         header:'공정명',
+         name:'procName',
+         align : 'center'
+        },
+        {
+         header:'지시량',
+         name:'instructQuantity',
+         align : 'right'
+        },
+        {
+         header:'투입량',
+         name:'inputQuantity',
+         align : 'right'
+        },
+        {
+         header:'불량량',
+         name:'errorQuantity',
+         align : 'right'
+        },
+        {
+         header:'생산량',
+         name:'prodQuantity',
+         align : 'right'
+        },
+        {
+         header:'단위',
+         name:'unit',
+         align : 'center',
+         width : '20'
+        },
+        {
+         header:'진행여부',
+         name:'progress',
+        },
+        {
+         header:'작업진행코드',
+         name:'workProgressCode'
+        }
+      ],
+      pageOptions: {
+        useClient: true,
+        perPage: 7
+      },
+    });
+    //설비 테이블        
+    const grid2 = new tui.Grid({
+      el: document.getElementById('grid2'),
+      bodyHeight: 200,
+      scrollX: false,
+      scrollY: true,
+      rowHeaders: ['checkbox'],
+      columns: [
+        {
+          header: '설비명',
+          name: 'facName',
+          align : 'center'
+        },
+        {
+          header: '설비상태',
+          name: 'facStatus',
+          align : 'center'
+        },
+        {
+          header: '설비코드',
+          name: 'facCode',
+          align : 'center'
+        }
+      ],
+      pageOptions: {
+        useClient: true,
+        perPage: 5
+      },
+    });
+    //작업자 선택 테이블        
+    const grid3 = new tui.Grid({
+      el: document.getElementById('grid3'),
+      bodyHeight: 95,
+      scrollX: false,
+      scrollY: true,
+      rowHeaders: ['checkbox'],
+      columns: [
+        {
+          header: '사번',
+          name: 'empCode',
+          align : 'center'
+        },
+        {
+          header: '사원명',
+          name: 'empName',
+          align : 'center'
+        },
+        {
+          header: '부서명',
+          name: 'deptId',
+          align : 'center'
+        }
+      ],
+      pageOptions: {
+        useClient: true,
+        perPage: 3
+      },
+    });
+    //실적 선택 테이블        
+    const grid4 = new tui.Grid({
+      el: document.getElementById('grid4'),
+      scrollX: false,
+      scrollY: true,
+      columns: [
+        {
+          header: '작업시작일시',
+          name: 'workStartDate',
+          align : 'center'
+        },
+        {
+         header:'투입량',
+         name:'inputQuantity',
+         align : 'right'
+        },
+        {
+         header:'불량량',
+         name:'errorQuantity',
+         align : 'right'
+        },
+        {
+         header:'생산량',
+         name:'prodQuantity',
+         align : 'right'
+        },
+        {
+          header: '설비명',
+          name: 'facName',
+          align : 'center'
+        },
+        {
+          header: '실적코드',
+          name: 'perfCode',
+          align : 'center'
+        }
+      ]
+    });
+  //최초 공정목록 불러오는 ajax
+  async function getworkProgress(prodCode,procCode,workProgressCode) {
+  await fetch(`/searchworkProgress?prodCode=${prodCode}&procCode=${procCode}&workProgressCode=${workProgressCode}`)
+      .then(res => res.json())
+      .then(res => {
+          grid.resetData(res);
+          let promise = new Promise((resolve, reject) => {
+  // 비동기 100mss 이후 font size 키우기
+  setTimeout(() => {
+    resolve(font());
+  }, 10);
+});
+      })
+  };
+    //공정코드에 맞는 설비목록 불러오는 ajax
+    async function getFac(workProgressCode) {
+    await fetch(`/fac?workProgressCode=${workProgressCode}`)
+      .then(res => res.json())
+      .then(res => {
+          grid2.resetData(res);
+          let promise = new Promise((resolve, reject) => {
+  // 비동기 100mss 이후 font size 키우기
+  setTimeout(() => {
+    resolve(font());
+  }, 10);
+});
+      })
+  };
+    //사원목록 불러오는 ajax
+    async function getEmp() {
+    await fetch(`/emp`)
+      .then(res => res.json())
+      .then(res => {
+          grid3.resetData(res);
+          let promise = new Promise((resolve, reject) => {
+  // 비동기 100mss 이후 font size 키우기
+  setTimeout(() => {
+    resolve(font());
+  }, 10);
+});
+      })
+  };
+      //status부코드 불러와 status에 담는 비동기 함수
+      async function getFSList() {
+      await fetch(`/FS`)
+      .then(res => res.json())
+      .then(res => {
+        let objList=res;
+        objList.forEach(function(element){
+          let obj = {text:element.subCodeName , value:element.subCode};
+          status.push(obj);
+        })
+      })
+  };
+  
+  getworkProgress('%','%','%');
+
+  //모든 제품명을 불러와 select option에 추가하는 담는 비동기 함수
+  async function getProdName() {
+  await fetch(`/prod`)
+      .then(res => res.json())
+      .then(res => {
+        let objList=res;
+        objList.forEach(function(ele){
+          $('#prodName').append($('<option/>').text(ele.prodName).val(ele.prodCode))
+        })
+      })
+  };
+  //모든 공정명을 불러와 select option에 추가하는 담는 비동기 함수
+  async function getProcName() {
+  await fetch(`/proc`)
+      .then(res => res.json())
+      .then(res => {
+        let objList=res;
+        objList.forEach(function(ele){
+          $('#procName').append($('<option/>').text(ele.procName).val(ele.procCode))
+        })
+      })
+  };
+   //진행중인 실적확인 ajax
+ function getPerfCnt(empCode){
+  var res=null;
+	$.ajax({
+        url: `/perfCnt?empCode=${empCode}`,
+        method: "GET",
+        async : false,
+        success: function(result) {
+         res =result;
+        },
+        error: function(error) {
+          res = error;
+        }
+    })
+    return res;
+}
+  //최초 공정목록 불러오는 ajax
+  async function getSinglePerf(empCode) {
+  await fetch(`/singlePerf?empCode=${empCode}`)
+      .then(res => res.json())
+      .then(res => {
+          grid4.resetData(res);
+          let promise = new Promise((resolve, reject) => {
+  // 비동기 100mss 이후 font size 키우기
+  setTimeout(() => {
+    resolve(font());
+  }, 10);
+});
+      })
+  };
+  getProdName()
+  getProcName()
+
+  //제품명 셀렉트 박스  change이벤트
+  $('#prodName').on('change',function(e){
+    let prodCode = $('#prodName option:selected').val()
+    let procCode = $('#procName option:selected').val()
+    getworkProgress(prodCode,procCode,'%');
+  })
+  //공정명 셀렉트 박스 change이벤트
+  $('#procName').on('change',function(e){
+    let prodCode = $('#prodName option:selected').val()
+    let procCode = $('#procName option:selected').val()
+    getworkProgress(prodCode,procCode,'%');
+  })
+  
+  getEmp();
+  //행숨기기
+  function hideProdCode(){
+    grid.hideColumn("progress");
+    grid.hideColumn("workProgressCode");
+    grid4.hideColumn("perfCode");
+  };
+  hideProdCode();
+
+	//키패드 입력 함수
+	function KeyPadWrite(add) {
+        if (add == "-1") {
+            document.getElementById('ShortCode').value = document.getElementById('ShortCode').value.slice(0, -1);
+        } 
+        // Max Length
+        else if (document.getElementById('ShortCode').value.length < 6) {
+            document.getElementById('ShortCode').value = document.getElementById('ShortCode').value + add;
+        }
+    }
+  //행 클릭 시 색상 고정
+	let grid1SelectedRowKey = null;
+	let grid2SelectedRowKey = null;
+	let grid3SelectedRowKey = null;
+	let grid1RowKey=-1
+	let grid2RowKey=-1
+	let grid3RowKey=-1
+  //grid의 click 이벤트
+  grid.on('click',e=>{
+    if (e.targetType == 'cell') {
+		grid1RowKey = e.rowKey;
+	   if (grid1SelectedRowKey !== null) {
+   			  grid.removeRowClassName(grid1SelectedRowKey, 'selected-row');
+  		  }
+	   grid1SelectedRowKey = grid1RowKey;
+ 			  grid.addRowClassName(grid1RowKey, 'selected-row');
+	  }	
+    grid.uncheckAll();
+    grid.check(grid1RowKey)
+    workProgressCode = grid.getValue(e.rowKey,'workProgressCode')
+    
+  });
+  //grid2의 click 이벤트
+  grid2.on('click',e=>{
+    if (e.targetType == 'cell') {
+		grid2RowKey = e.rowKey;
+	   if (grid2SelectedRowKey !== null) {
+   			  grid2.removeRowClassName(grid2SelectedRowKey, 'selected-row');
+  		  }
+	   grid2SelectedRowKey = grid2RowKey;
+ 			  grid2.addRowClassName(grid2RowKey, 'selected-row');
+	  }	
+    grid2.uncheckAll();
+    grid2.check(grid2RowKey)
+    facCode = grid2.getValue(e.rowKey,'facCode');
+
+  });
+  //grid3의 click 이벤트
+  grid3.on('click',e=>{
+    if (e.targetType == 'cell') {
+		grid3RowKey = e.rowKey;
+	   if (grid3SelectedRowKey !== null) {
+   			  grid3.removeRowClassName(grid3SelectedRowKey, 'selected-row');
+  		  }
+	   grid3SelectedRowKey = grid3RowKey;
+ 			  grid3.addRowClassName(grid3RowKey, 'selected-row');
+	  }	
+    empCode = grid3.getValue(e.rowKey,'empCode');
+    let cnt = getPerfCnt(empCode); 
+    grid3.uncheckAll();
+    grid3.check(grid3RowKey)
+    if(cnt>0){
+      getSinglePerf(empCode);
+      $('#perf-Modal').modal('show');
+      grid3.removeRowClassName(grid3RowKey, 'selected-row')
+      grid3.uncheckAll();
+    }
+  });
+  //폰트 크기 스크롤바 조작 이후 다시 키우기
+  $('#grid').on('mouseup',function(event){
+  let promise = new Promise((resolve, reject) => {
+
+  // 비동기 100mss 이후 font size 키우기
+  setTimeout(() => {
+    resolve(font());
+  }, 10);
+});
+});
+//폰트 크기 스크롤바 조작 이후 다시 키우기
+  $('#grid2').on('mouseup',function(event){
+  let promise = new Promise((resolve, reject) => {
+
+  // 비동기 100mss 이후 font size 키우기
+  setTimeout(() => {
+    resolve(font());
+  }, 10);
+});
+});
+//폰트 크기 스크롤바 조작 이후 다시 키우기
+  $('#grid3').on('mouseup',function(event){
+  let promise = new Promise((resolve, reject) => {
+
+  // 비동기 100mss 이후 font size 키우기
+  setTimeout(() => {
+    resolve(font());
+  }, 10);
+});
+});
+  //모달의 확인버튼 클릭이벤트
+  $('#inputBtn').click(function(e){
+    let check1 = grid.getCheckedRows().length;
+    let check3 = grid3.getCheckedRows().length;
+    if(check1>0&&check3>0){
+      getFac(workProgressCode);
+      $('#keypad-Modal').modal('show');
+      $('#ShortCode').val('');
+      $('#displayQ').text('지시량 : '+grid.getCheckedRows()[0].instructQuantity+'  투입량 : '+grid.getCheckedRows()[0].inputQuantity+'  투입가능량 : '+(grid.getCheckedRows()[0].instructQuantity-grid.getCheckedRows()[0].inputQuantity))
+    }else if(check1==0&&check3==0){
+      toastr.error('공정과 사원을 선택하지 않으셨습니다. 공정과 사원을 먼저 선택해주세요.')
+    }else if(check1==0){
+      toastr.error('공정을 선택하지 않으셨습니다. 공정을 먼저 선택해주세요.')
+    }else if(check3==0){
+      toastr.error('사원을 선택하지 않으셨습니다. 사원을 먼저 선택해주세요.')
+    }
+  })
+  //투입량 입력 모달 켜지면 실행되는 함수.
+  $('#keypad-Modal').on('shown.bs.modal', function(){
+		grid2.refreshLayout();
+let promise = new Promise((resolve, reject) => {
+  // 비동기 100mss 이후 font size 키우기
+  setTimeout(() => {
+    resolve(font());
+  }, 10);
+});
+	});
+  //실적 모달 켜지면 실행하는 함수
+  $('#perf-Modal').on('shown.bs.modal', function(){
+		grid4.refreshLayout();
+let promise = new Promise((resolve, reject) => {
+  // 비동기 100mss 이후 font size 키우기
+  setTimeout(() => {
+    resolve(font());
+  }, 10);
+});
+	});
+  //그리드 폰트 크기 키우기
+  function font(){
+    // $('.tui-grid-cell-content').attr('style','font-size:large; font-weight:bold;')
+    // $('.tui-grid-cell-header').attr('style','font-size:x-large;')
+  }
+  //실적모달에서 예버튼 누를시 페이지 이동.
+  $('#perfYes').on('click',e=>{
+    let perfCode = grid4.getValue(0,'perfCode');
+    $(location).attr("href", `/prod/saveProgress?perfCode=${perfCode}&empCode=&workProgressCode=&facCode=&inputQ=`);
+  })
+  //키패드에서 체크버튼 클릭시 이벤트
+  $('#input').on('click',e=>{
+    let empName = grid3.getCheckedRows()[0].empName;
+    let workName = grid.getCheckedRows()[0].workName;
+    let procName = grid.getCheckedRows()[0].procName;
+    let facName =null;
+    if(grid2.getCheckedRows().length>0){
+      facName= grid2.getCheckedRows()[0].facName;
+    }else{
+      toastr.error('설비가 선택되지 않았습니다. 설비를 선택해주세요')
+      return;
+    }
+    let inputQ = $('#ShortCode').val();
+    if(empName == null){
+      toastr.error('작업자가 선택되지 않았습니다. 작업자를 선택해주세요');
+      return;
+    }
+    if(workName == null){
+      toastr.error('공정이 선택되지 않았습니다. 공정을 선택해주세요');
+      return;
+    }
+    if(inputQ == null||inputQ<=0){
+      toastr.error('투입량이 입력되지 않았거나 0입니다. 0보다 큰값을 투입해주세요');
+      return;
+    }
+    if(inputQ>grid.getCheckedRows()[0].instructQuantity-grid.getCheckedRows()[0].inputQuantity){
+      toastr.error('투입이 가능한 수치를 넘었습니다. 투입가능량은 '+(grid.getCheckedRows()[0].instructQuantity-grid.getCheckedRows()[0].inputQuantity)+'입니다.')
+      return;
+    }
+    $('#checkSum').text(`작업자 ${empName} 님, 선택하신 공정은 ${workName} 지시의 ${procName}이며 투입량은 ${inputQ} , 선택하신 설비는 ${facName} 입니다.`)
+    $('#check-Modal').modal('show');
+  })
+  $("#progYes").on('click',e=>{
+    let empCode = grid3.getCheckedRows()[0].empCode;
+    let workProgressCode = grid.getCheckedRows()[0].workProgressCode;
+    let facCdoe = grid2.getCheckedRows()[0].facCode;
+    let inputQ = $('#ShortCode').val();
+    $(location).attr("href", `/prod/saveProgress?perfCode=&empCode=${empCode}&workProgressCode=${workProgressCode}&facCode=${facCode}&inputQuantity=${inputQ}`);
+  })
+   </script>
+</html>

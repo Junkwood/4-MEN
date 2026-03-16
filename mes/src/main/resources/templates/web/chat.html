@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All-IN-ONE 채팅방</title>
+    <style>
+        .chat-message .timestamp {
+            font-size: 0.8em;
+            color: gray;
+            margin-bottom: 5px;
+        }
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        h2 {
+            color: black;
+            text-align: center;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            width: 60vw;
+            margin: 0 auto;
+            font-family: Arial, sans-serif;
+        }
+
+        .sidebar {
+            width: 15%;
+            background-color: #efede9;
+            color: black; 
+            padding: 20px;
+            border: 1px solid black;
+            margin: 10px;
+        }
+
+        .sidebar h2 {
+            margin-bottom: 30px;
+            margin-top: 5px;
+        }
+
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .sidebar ul li {
+            padding: 5px;
+            background-color: #d6d8d9;
+            margin-bottom: 30px;
+            cursor: pointer;
+            text-align: center;
+            width: 100%; 
+            border: 1px solid black;
+        }
+
+        .sidebar ul li:hover {
+            background-color: #003d80;
+        }
+
+        .chat-container {
+            width: 85%; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid black;
+        }
+
+        .chat-header {
+            background-color: #efede9;
+            color: black;
+            font-weight: bold;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .chat-box {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px; 
+        }
+
+        .chat-message {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 5px; 
+        }
+
+        .chat-message .empName {
+            font-weight: bold;
+            margin-bottom: 3px; 
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-message .empName img {
+            border-radius: 50%;
+            width: 30px; 
+            height: 30px; 
+            margin-right: 5px; 
+        }
+
+        .chat-message.self {
+            align-items: flex-end;
+        }
+
+        .chat-message .message {
+            background-color: #f1f1f1;
+            padding: 5px 8px; 
+            border-radius: 15px;
+            border-top-left-radius: 0;
+            word-wrap: break-word;
+            display: inline-block;
+            position: relative;
+            margin-bottom: 5px; 
+            max-width: fit-content;
+        }
+
+        .chat-message.self .message {
+            background-color: #007bff;
+            color: white;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 0;
+        }
+
+        .chat-message .message:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -10px;
+            width: 0;
+            height: 0;
+            border: 10px solid transparent;
+            border-top-color: #f1f1f1;
+            border-bottom: 0;
+            border-left: 0;
+            margin-top: -10px;
+            margin-left: -10px;
+        }
+
+        .chat-message.self .message:before {
+            left: auto;
+            right: -10px;
+            border-top-color: #007bff;
+            border-right: 0;
+            border-left: 10px solid transparent;
+            margin-right: -10px;
+        }
+
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #ddd;
+        }
+
+        .chat-input input {
+            width: 92%; 
+            padding: 10px;
+            border: 1px solid black;
+            border-right: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .chat-input button {
+            padding: 10px 20px; 
+            border: 1px solid black;
+            background-color: #d6d8d9;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .chat-input button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>채팅방 목록</h2>
+        <ul id="chatRooms"></ul>
+    </div>
+    <div class="chat-container">
+        <div class="chat-header">
+            All-IN-ONE 채팅방
+            <div>
+                로그인계정: <span id="loggedInEmpCode"></span>
+            </div>
+        </div>
+        <div class="chat-box" id="chatBox"></div>
+        <div class="chat-input">
+            <input id="message" type="text" placeholder="메시지를 입력해주세요." />
+            <button onclick="sendMessage()">전송</button>
+        </div>
+    </div>
+
+    <script>
+        let empCode = '';  // 실제 사용자의 empCode로 설정
+        // Fetch the CSRF token
+        const csrfToken = $('meta[name="_csrf"]').attr('content');
+        const csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+        
+        let chatBox = document.getElementById('chatBox'); // 채팅 메시지를 표시할 영역
+        let chatRooms = document.getElementById('chatRooms'); // 채팅방 목록을 표시할 영역
+        let currentRoomId = null; // 현재 선택된 채팅방 ID
+        
+        // 현재 호스트 이름을 확인하여 서버 URL 설정
+        const serverUrl = location.hostname === 'localhost' ? 'ws://localhost:8080' : 'ws://allinone-mes.store';
+        let socket = new WebSocket(serverUrl + '/websocket'); // WebSocket 연결 설정
+
+        socket.onopen = function() {
+            // WebSocket 연결이 성공적으로 열렸을 때 호출되는 함수
+            console.log('Connected');
+            fetchChatRooms(); // 채팅방 목록을 가져오는 함수 호출
+        };
+
+        socket.onmessage = function(event) {
+            // WebSocket을 통해 메시지를 수신했을 때 호출되는 함수
+            let message = JSON.parse(event.data); // 수신된 데이터를 JSON 객체로 변환
+            displayMessage(message); // 수신된 메시지를 화면에 표시하는 함수 호출
+        };
+
+        function sendMessage() {
+            // 메시지를 전송하는 함수
+            let messageContent = document.getElementById('message').value; // 입력된 메시지 내용
+
+            if (empCode && messageContent && currentRoomId) {
+                // empCode, 메시지 내용, 현재 채팅방 ID가 모두 존재하는 경우
+                let message = {
+                    empCode: empCode,
+                    roomId: currentRoomId,
+                    message: messageContent,
+                    createdAt: new Date().toISOString() // 현재 시간을 타임스탬프로 추가
+                };
+                console.log("Sending message:", message); // 전송할 메시지 내용을 로그로 출력
+                socket.send(JSON.stringify(message)); // WebSocket을 통해 메시지를 전송
+                document.getElementById('message').value = ''; // 메시지 입력 필드 초기화
+                // displayMessage(message); // 전송한 메시지를 바로 화면에 표시하지 않음
+            } else {
+                // 필수 필드가 누락된 경우
+                console.error("Missing fields: empCode, messageContent, or currentRoomId");
+            }
+        }
+
+        function displayMessage(message) {
+            let getMessage = document.createElement('div');
+            getMessage.classList.add('chat-message');
+            if (message.empCode === empCode) {
+                getMessage.classList.add('self');
+            }
+
+            let getEmpName = document.createElement('span');
+            getEmpName.classList.add('empName');
+            getEmpName.textContent = message.empName;
+
+            let messageContentElement = document.createElement('span');
+            messageContentElement.classList.add('message');
+            messageContentElement.textContent = message.message;
+
+            let timestampElement = document.createElement('div');
+            timestampElement.classList.add('timestamp');
+            // 타임스탬프를 로컬 시간으로 변환하여 표시
+            let timestamp = new Date(message.createdAt);
+            timestampElement.textContent = timestamp.toLocaleString();
+
+            getMessage.appendChild(getEmpName);
+            getMessage.appendChild(messageContentElement);
+            getMessage.appendChild(timestampElement);
+            chatBox.appendChild(getMessage);
+        }
+
+        function fetchChatRooms() {
+            $.ajax({
+                url: serverUrl.replace('ws', 'http') + '/chat/rooms',
+                method: 'GET',
+                success: function(data) {
+                    console.log("채팅방:", data);
+                    data.forEach(room => {
+                        let roomNum = document.createElement('li');
+                        roomNum.textContent = ' == ' + 'room ' + room.ROOMID + ' == '  + room.ROOMNAME; 
+                        roomNum.setAttribute('data-room-id', room.ROOMID);  
+                        roomNum.onclick = function() {
+                            currentRoomId = roomNum.getAttribute('data-room-id');  
+                            console.log('선택 채팅방번호 :', currentRoomId);  
+                            loadChatHistory(currentRoomId); 
+                        };
+                        chatRooms.appendChild(roomNum); 
+                    });
+                },
+                error: function(xhr, status, error) {
+                    console.error('채팅방목록 x:', error);  
+                }
+            });
+        }
+
+        function loadChatHistory(roomId) {
+            // 특정 채팅방의 채팅 기록을 가져오는 함수
+            console.log('채팅방 번호: ', roomId); 
+            $.ajax({
+                url: serverUrl.replace('ws', 'http') + '/api/messages', // 채팅 기록을 가져올 API 엔드포인트
+                method: 'GET',
+                data: { roomId: roomId }, // 요청 데이터로 채팅방 ID를 전달
+                success: function(messages) {
+                    chatBox.innerHTML = ''; // 채팅 박스 내용을 초기화
+                    messages.forEach(message => {
+                        // 각 메시지를 화면에 표시
+                        displayMessage(message);
+                    });
+                },
+                error: function(xhr, status, error) {
+                    // 채팅 기록을 가져오지 못했을 때 호출되는 함수
+                    console.error('채팅기록:', roomId, 'Error:', error);  // 에러 로그 출력
+                }
+            });
+        }
+
+        document.getElementById('message').addEventListener('keypress', function(event) {
+            // 메시지 입력 필드에서 Enter 키를 눌렀을 때 메시지를 전송하는 이벤트 리스너
+            if (event.key === 'Enter') {
+                sendMessage(); // 메시지를 전송하는 함수 호출
+            }
+        });
+
+        // 로그인한 empCode를 가져오기 위한 함수
+        function fetchEmpCode() {
+            // 서버에서 로그인한 사용자의 empCode를 가져오는 함수
+            $.ajax({
+                url: serverUrl.replace('ws', 'http') + '/chat/user', // 사용자 정보를 가져올 API 엔드포인트
+                method: 'GET',
+                data: { empId: 'loggedInEmpId' },  
+                success: function(data) {
+                    empCode = data.empCode;  
+                    document.getElementById('loggedInEmpCode').textContent = empCode; // empCode를 화면에 표시
+                }
+            });
+        }
+
+        fetchEmpCode();
+        
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+<style>
+  /* 데이터가 없을 때 표시되는 메시지의 텍스트 크기 설정 */
+  .tui-grid-layer-state p {
+     font-size: 20px !important;
+}
+</style>
+ </head>
+<body>
+  <div class="container">
+		<h1>출고관리</h1>
+		<div class="order-container" style="float: right;" id='groub-btn'>
+			<button type="button" class="btn btn-outline-dark"
+				id="OrderBtn">주문내역</button>
+			<input type='button' class="btn btn-outline-primary" value="출고내역" id="dispatchBtn">
+			<input type='button' class="btn btn-outline-success" value="초기화" id="resetBtn">
+			<input type='button' class="btn btn-outline-info" value="저장" id="saveBtn">
+			<input type='button' class="btn btn-outline-danger" value="삭제" id="deleteBtn">
+		</div>
+		  
+		   <div class="row orderCallTable">
+			   <div class="col-12">
+				    <div id="grid1"></div>
+			   </div>
+			</div>
+			<h1>출고상세관리</h1>
+			<div class="row orderCallTable">	  
+				<div class="col-12">
+					 <div id="grid2"></div>
+				</div>
+			</div>
+	</div>
+	<div class="modal fade" id="search-MatOrder-Modal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 class="modal-title fs-4 order-search-title textInline" 
+						id="exampleModalLabel">주문 간단 조회</h3>
+				    <button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="order-search-nav searchGroup">
+
+						<select class="form-select order-select"
+							aria-label="Default select example" id=orderSelect>
+							<option selected value="orderCode">주문코드</option>
+							<option value="prodName">제품명</option>
+							<option value="clientName">업체명</option>
+						</select> 
+						<input class="form-control me-2 order-search" type="search"
+							placeholder="Search" aria-label="Search" id="searchOrder">
+						<button class="btn btn-outline-success" type="button" id="searchBtn">검색</button>
+					</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-12">
+							<div id="grid"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+					</div>
+				</div>
+			</div>
+		</div>
+  </div>
+  <div class="modal fade" id="Dispatch-Modal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 class="modal-title fs-4 order-search-title textInline" 
+						id="exampleModalLabel">출고 간단 조회</h3>
+				    <button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="order-search-nav searchGroup">
+
+						<select class="form-select order-select"
+							aria-label="Default select example" id=dispatchSelect>
+							<option selected value="orderCode">주문코드</option>
+							<option value="empName">담당자</option>
+							<option value="prodName">제품명</option>
+						</select> 
+						<input class="form-control me-2 order-search" type="search"
+							placeholder="Search" aria-label="Search" id="searchDispatch">
+						<button class="btn btn-outline-success" type="button" id="searchDisBtn">검색</button>
+					</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-12">
+							<div id="grid3"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+					</div>
+				</div>
+			</div>
+		</div>
+  </div>
+  <div class="modal fade" id="Dispatch-Number-Modal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 class="modal-title fs-4 order-search-title textInline" 
+						id="exampleModalLabel">출고 수량 기입</h3>
+				    <button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-12">
+							<div id="numberGrid"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+					<input type='button' class="btn btn-outline-primary" value="저장" id="numberSaveBtn">
+					</div>
+				</div>
+			</div>
+		</div>
+  </div>
+  <!-- 모달창 -->
+<div class="modal fade" id="Sucess-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">등록 완료</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: center;">
+          <img src="/images/smileImg.png" width="200" alt="Smile Image">
+          <h3 style="margin-top: 20px; font-family: 'Noto Sans KR', sans-serif;">등록이 완료되었습니다.</h3>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-success" id="nextLevel">등록 완료</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+<script th:inline="javascript">
+//그리드2 배열담기
+let disDetail = [];
+//수정 등록 분리
+let modifyCount = 0;
+//그리드1 클릭한 행
+let grid1EventRow= 0;
+//실질적 등록할 배열
+let disAdd = [];
+//출고량 클릭시 행줄 담을 변수
+let clickEventRow='';
+//세션값 가져와 이름 가져오기
+   let empName =[[${#authentication.principal.empName}]];
+ //세션값 가져와 사원번호 가져오기
+   let empCode =[[${#authentication.principal.empCode}]];
+//데이터 없을때 나오는 표시
+	tui.Grid.setLanguage('en', {
+	   	  display: {
+	   	    noData: '데이터가 없습니다.', // 데이터가 없을 때 표시될 메시지
+	   	    resizeHandleGuide: 'You can change the width of the column by mouse drag, ' +
+	   	      'and initialize the width by double-clicking.'
+	   	  }
+	   	});
+//csrf 토큰 넣을 값 가져오기
+const token = $("meta[name='_csrf']").attr("content")
+const header = $("meta[name='_csrf_header']").attr("content");
+//출고 창
+   const grid1 = new tui.Grid({
+     el: document.getElementById('grid1'),
+     scrollX: false,
+     scrollY: false,
+     pageOptions: {
+         perPage: 5,
+         useClient: true,
+     },
+     columns:[
+     	{ header : '주문코드' ,name:'orderCode',align:'center'},
+         { header: '등록일',name:'releaseDate',align:'center'},
+         { header: '납기일자',name:'dueDate',align:'center'},
+         { header: '업체명', name:'clientName', align:'center'},
+           
+          
+     ],
+     
+ });
+
+//출고 상세 창
+ const grid2 = new tui.Grid({
+     el: document.getElementById('grid2'),
+     scrollX: false,
+     scrollY: false,
+     columns:[
+     	{ header : '출고상세코드' ,name:'prodReleaseCode',align:'center'},
+     	{ header : '주문상세코드' ,name:'orderDetailCode',align:'center'},
+         { header: '제품코드',name:'prodCode',align:'center'},
+         { header: '주문코드',name:'orderCode',align:'center'},
+         { header: '제품명',name:'prodName'},
+         { header: '사원코드', name:'empCode', align:'center'},
+         { header: '담당자', name:'empName',align:'center'},
+         { header: '주문량',name:'orderQuantity',align:'right',
+             formatter: function(price){
+           	  return priceFormat(price.value)+'개';
+             },
+        },
+         { header: '기납기량', name:'send', align:'right',
+           
+           formatter: function(price){
+         	  return priceFormat(price.value)+'개';
+           },
+         },
+         { header:'미납기량', name:'noSend', align:'right',
+         	formatter: function(price){
+           	  return priceFormat(price.value)+'개';
+             }
+         },
+         { header:'출고량', name:'releaseQuantity', align:'right',editor:'text',
+        	 validation:{
+                 dataType:'number',
+                 min:1,
+                 max:9999999999,
+              },
+        	 formatter: function(price){
+            	  return priceFormat(price.value)+'개';
+              }
+          }
+     ],
+     
+ });
+//출고수량 기입창
+ const numberGrid = new tui.Grid({
+     el: document.getElementById('numberGrid'),
+     scrollX: false,
+     scrollY: false,
+     columns:[
+     	 { header : '출고상세코드' ,name:'prodReleaseCode',align:'center'},
+     	 { header : '주문상세코드' ,name:'orderDetailCode',align:'center'},
+         { header: '제품코드',name:'prodCode',align:'center'},
+         { header: '주문코드',name:'orderCode',align:'center'},
+         { header: '제품명',name:'prodName'},
+         { header: '완제품 LOT번호', name:'lot', align:'center'},
+         { header: '담당자', name:'empName',align:'center'},
+         { header: '미납기량', name:'noSend', align:'right'},
+         { header: '사원코드', name:'empCode',align:'center'},
+         { header: '재고량',name:'inventory',align:'right',
+             formatter: function(price){
+           	  return priceFormat(price.value)+'개';
+             },
+        },
+         { header:'출고량', name:'releaseQuantity', align:'right',editor:'text',
+        	 validation:{
+                 dataType:'number',
+                 min:1,
+                 max:9999999999,
+              },
+        	 formatter: function(price){
+            	  return priceFormat(price.value)+'개';
+              },
+              
+          }
+     ],
+     	summary: {
+   	   			 align: 'center',
+   	    		 height: 40,
+   	   			 position: 'bottom', 
+   	  	    columnContent: {
+   	    		inventory	: {
+   	            	template: function() {
+   	               	 return '총출고수량';
+   	             }, 
+   	        },
+   	   releaseQuantity: {
+   	            template: function(total) {
+   	                return priceFormat(total.sum) + '개';
+   	            }, 
+   	        },
+   	    },
+   	},
+     
+ });
+//클릭시 주문조회
+$("#OrderBtn").click(function(){
+	if(modifyCount==1){
+		toastr.error('수정사항시 주문서는 가져올 수 없습니다.')
+		return;
+	};
+	$('#search-MatOrder-Modal').modal('show');
+    ajaxOrderList();
+ });
+    $('#search-MatOrder-Modal').on('shown.bs.modal', function () {
+    	grid.refreshLayout()
+    })
+//주문 모달 검색창
+$('#searchBtn').on('click', function(){
+    let orderCode = '';
+    let orderName = '';
+    let clientName = '';
+    let prodName = '';
+    let optionSelect = $('#orderSelect :selected').val();
+    if(optionSelect == 'orderCode'){
+        orderCode = $('#searchOrder').val();
+    } else if(optionSelect == 'orderName'){
+        orderName = $('#searchOrder').val();
+    } else if(optionSelect == 'clientName'){
+        clientName = $('#searchOrder').val();
+    } else if(optionSelect == 'prodName'){
+        prodName = $('#searchOrder').val();
+    }
+    ajaxOrderList(orderCode, orderName, clientName, prodName);
+    $('#searchOrder').val('');
+});
+//엔터 클릭시 검색
+$('#searchOrder').on("keyup", function(key){
+    if(key.keyCode == 13){
+        let orderCode = '';
+        let orderName = '';
+        let clientName = '';
+        let prodName = '';
+        let optionSelect = $('#orderSelect :selected').val();
+        if(optionSelect == 'orderCode'){
+            orderCode = $('#searchOrder').val();
+        } else if(optionSelect == 'orderName'){
+            orderName = $('#searchOrder').val();
+        } else if(optionSelect == 'clientName'){
+            clientName = $('#searchOrder').val();
+        } else if(optionSelect == 'prodName'){
+            prodName = $('#searchOrder').val();
+        }
+        ajaxOrderList(orderCode, orderName, clientName, prodName);
+        $('#searchOrder').val('');
+    }
+});
+
+
+ const grid = new tui.Grid({
+        el: document.getElementById('grid'),
+        scrollX: false,
+        scrollY: false,
+        pageOptions: {
+            perPage: 5,
+            useClient: true,
+        },
+        columns: [
+            { header: '주문코드', name: 'orderCode',align:'center'},
+            { header: '주문명', name: 'orderName',width:140},
+            { header: '업체명', name: 'clientName'},
+            { header: '업체코드', name: 'clientCode'},
+            { header: '제품명', name: 'prodName',width:160},
+            { header: '주문일자', name: 'registrationDate',align:'center'},
+            { header: '납기일자', name: 'dueDate',align:'center'},
+            { header: '처리상태', 
+              name: 'status',
+              align:'center',
+              renderer:{
+            	  styles:{
+            		  backgroundColor:(props) => props.value == '등록'?  'rgba(252, 240, 3)' 
+            		  : props.value == '신청중'?  'rgba(252, 3, 45)' 	  
+            		  : props.value == '완료'?  'rgba(3, 252, 65)':'',
+            		    fontSize :'14px',
+                    	fontFamily: 'Malgun Gothic',
+                    	fontWeight: 'bold'
+            	  }
+              }
+            }
+        ],
+    });
+//AJAX를 통한 모달 팝업창으로 데이터 전달
+ function ajaxOrderList(orderCode, orderName, clientName, prodName) {
+     $.ajax({
+         url: "/simpleOrder",
+         method: "GET",
+         data: {
+             orderCode: orderCode,
+             orderName: orderName,
+             clientName: clientName,
+             prodName: prodName
+         },
+         beforeSend : function(xhr) {
+             xhr.setRequestHeader(header, token);
+         },
+         success: function(result) {
+             grid.resetData(result);
+         },
+         error: function(error) {
+             console.error('AJAX 요청 실패:', error);
+         }
+     });
+ }
+    grid.on('click',function(ev){
+    	//이미 주문코드가 있는지 판단하는 변수
+    	let orderCode = grid.getValue(ev.rowKey,'orderCode');
+    	let status = grid.getValue(ev.rowKey,'status')
+    	let gridCount = grid1.getRowCount();
+    	for(i=0; i<gridCount; i++){
+    		let row = grid1.getRow(i)
+    		if(row.orderCode==orderCode){
+    			isDuplicate= true;
+    			 toastr.error('이미 선택된 주문입니다.');
+    	    	    return;
+    		}
+    	}
+    	if(status=='완료'){
+    		toastr.error('완료된 상품은 추가 출고가 불가합니다.');
+    		return;
+    	}
+    	//grid1전달
+    	let releaseDate = getCurrentDate();
+    	let dueDate = grid.getValue(ev.rowKey,'dueDate');
+    	let clientName = grid.getValue(ev.rowKey,'clientName');
+    	let grid1Call = {'releaseDate': releaseDate,'orderCode' : orderCode,
+    		             'dueDate': dueDate, "clientName": clientName}
+    	
+    	if( ev.targetType === 'cell'){
+    	   if(grid1.getRowCount()==0){
+         	   grid1.resetData([grid1Call]);
+      	  }else{
+    		  grid1.appendRow(grid1Call);
+    	  }
+    	  //grid2 전달
+         	ajaxDispatchCall(orderCode);
+        	$('#search-MatOrder-Modal').modal('hide');
+       } 
+    })
+    
+ 
+//클릭시 출고간단조회
+$("#dispatchBtn").click(function(){
+	$('#Dispatch-Modal').modal('show');
+	ajaxDispatchList();
+ });
+$('#Dispatch-Modal').on('shown.bs.modal', function () {
+     grid3.refreshLayout()
+});
+//주문 모달 검색창
+$('#searchDisBtn').on('click', function(){
+    let orderCode = '';
+    let prodName = '';
+    let empName = '';
+    let optionSelect = $('#dispatchSelect :selected').val();
+    if(optionSelect == 'orderCode'){
+        orderCode = $('#searchDispatch').val();
+    } else if(optionSelect == 'prodName'){
+    	prodName = $('#searchDispatch').val();
+    } else if(optionSelect == 'empName'){
+    	empName = $('#searchDispatch').val();
+    } 
+    ajaxDispatchList(orderCode, prodName, empName);
+    $('#searchDispatch').val('');
+});
+//엔터 클릭시 검색
+$('#searchDispatch').on("keyup", function(key){
+    if(key.keyCode == 13){
+    	 let orderCode = '';
+    	    let prodName = '';
+    	    let empName = '';
+    	    let optionSelect = $('#dispatchSelect :selected').val();
+    	    if(optionSelect == 'orderCode'){
+    	        orderCode = $('#searchDispatch').val();
+    	    } else if(optionSelect == 'prodName'){
+    	    	prodName = $('#searchDispatch').val();
+    	    } else if(optionSelect == 'empName'){
+    	    	empName = $('#searchDispatch').val();
+    	    } 
+    	    ajaxDispatchList(orderCode, prodName, empName);
+    	    $('#searchDispatch').val('');
+    }
+});
+function ajaxDispatchList(orderCode, prodName, empName) {
+    $.ajax({
+        url: "/simpleDispatch",
+        method: "GET",
+        data: {
+        	orderCode: orderCode,
+        	prodName: prodName,
+        	empName: empName
+        },
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+            grid3.resetData(result);
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+//AJAX로 받아서 출고클릭시 display
+const grid3 = new tui.Grid({
+        el: document.getElementById('grid3'),
+        scrollX: false,
+        scrollY: false,
+        pageOptions: {
+            perPage: 5,
+            useClient: true,
+        },
+        columns: [
+            { header: '출고코드', name: 'prodReleaseCode'},
+            { header: '주문코드', name: 'orderCode'},
+            { header: '제품코드', name: 'prodCode'},
+            { header: '제품명', name: 'prodName'},
+            { header: '업체명', name: 'clientName'},
+            { header: '담당자', name: 'empName'},
+            { header: '사원코드', name: 'empCode'},
+            { header: '출고량', name: 'releaseQuantity'},
+            { header: '납기일자', name: 'dueDate'},
+            { header: '출고처리일자', name: 'releaseDate'},
+        ],
+    });
+   
+grid.hideColumn("clientCode");  
+grid3.hideColumn("prodReleaseCode"); 
+grid3.hideColumn("prodCode");
+grid3.hideColumn("empCode");
+grid3.on('click',function(ev){
+	if( ev.targetType === 'cell'){
+	modifyCount = 1;
+	disDetail = [];
+	
+	let prodReleaseCode = grid3.getValue(ev.rowKey,'prodReleaseCode')
+	let releaseQuantity = grid3.getValue(ev.rowKey,'releaseQuantity')
+	let orderCode = grid3.getValue(ev.rowKey,'orderCode')
+	//grid1전달
+	let releaseDate = getCurrentDate();
+	let clientName = grid3.getValue(ev.rowKey,'clientName');
+	let dueDate = grid3.getValue(ev.rowKey,'dueDate');
+	let grid1Call = [{'releaseDate': releaseDate,'orderCode' : orderCode, "dueDate": dueDate
+        , "clientName": clientName}]
+	grid1.resetData(grid1Call);
+	//grid2전달
+	ajaxDispatchMoidfyCall(prodReleaseCode,releaseQuantity);
+	$('#Dispatch-Modal').modal('hide');
+	}
+})
+  //출고버튼 클릭하고 그행을 누르면 주문코드를 받아와 나오는 메서드
+function ajaxDispatchMoidfyCall(prodReleaseCode,releaseQuantity){
+	 $.ajax({
+	        url: "/dispatchModifyCall",
+	        method: "GET",
+	        data: {
+	        	prodReleaseCode: prodReleaseCode
+	        },
+	        beforeSend : function(xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+	        success: function(result) {
+	        	for(let obj of result){
+	        		   obj.empName=empName;
+	        		   obj.empCode=empCode;
+	        		   obj.releaseQuantity = releaseQuantity;
+	        	}
+	        	disDetail.push(result);
+	        	grid2.resetData(result);
+	        	disAdd=[];
+	        },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    });
+} 
+
+  //orderCode받아와 ajax로 리스트 전달
+ function ajaxDispatchCall(orderCode,releaseQuantity){
+	 $.ajax({
+	        url: "/dispatchCall",
+	        method: "GET",
+	        data: {
+	        	orderCode: orderCode
+	        },
+	        beforeSend : function(xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+	        success: function(result) {
+	        	for(let obj of result){
+	        		   obj.empName=empName;
+	        		   obj.empCode=empCode;
+	        		   obj.releaseQuantity = releaseQuantity;
+	        	}
+	        	disDetail.push(result);
+	        	if(modifyCount==1){
+	        		grid2.resetData(result);
+	        	}
+	        },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    });
+ }
+ //금액 포맷 함수('#,###')
+ function priceFormat(price) {
+ 	if(price == null){
+ 		return '0';
+ 	}
+ 	let result = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+ 	return result;
+ }
+
+ // 현재 날짜를 가져오는 함수
+     function getCurrentDate() {
+         const today = new Date();
+         const year = today.getFullYear();
+         let month = today.getMonth() + 1;
+         let day = today.getDate();
+         month = month < 10 ? '0' + month : month;
+         day = day < 10 ? '0' + day : day;
+         return year + '-' + month + '-' + day;
+ }
+ //그리드1 주문번호 클릭시 상세창 자동 디스플레이
+  grid1.on('click', function(ev) {
+    if (ev.targetType === 'cell') {
+        grid1EventRow = ev.rowKey;
+
+        // grid2.resetData를 일정 시간 후에 실행
+            grid2.resetData(disDetail[ev.rowKey]);
+    }
+});
+ //출고량 클릭시 상품코드를 받고 ajax로 연결
+   grid2.on('click',function(ev){
+	   if(ev.columnName=='releaseQuantity'){
+		   clickEventRow = ev.rowKey
+		   let prodReleaseCode = grid2.getValue(ev.rowKey,'prodReleaseCode');
+		   let orderCode = grid2.getValue(ev.rowKey,'orderCode');
+		   let releaseDate = grid2.getValue(ev.rowKey,'releaseDate');
+		   let prodCode = grid2.getValue(ev.rowKey,'prodCode');
+		   let noSend = grid2.getValue(ev.rowKey,'noSend');
+		   let orderDetailCode = grid2.getValue(ev.rowKey,'orderDetailCode');
+		   $('#Dispatch-Number-Modal').off('shown.bs.modal').on('shown.bs.modal', function () {
+		        dispatchNumberAjax(prodReleaseCode,prodCode,releaseDate,orderCode,noSend,orderDetailCode);
+		     }).modal('show')
+	   }   
+  })
+  //상품코드를 받아 ajax 실행후 numberGrid로 전달
+  function dispatchNumberAjax(prodReleaseCode,prodCode,releaseDate,orderCode,noSend,orderDetailCode){
+	 $.ajax({
+	        url: "/dispatchReady",
+	        method: "GET",
+	        data: {
+	            prodCode: prodCode
+	        },
+	        beforeSend : function(xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+	        success: function(result) {
+	        	for(let obj of result){
+	        		 obj.empName=empName;
+	        		 obj.empCode=empCode;
+	        		 obj.orderDetailCode= orderDetailCode;
+	        		 obj.prodReleaseCode=prodReleaseCode;
+	        		 obj.releaseDate=releaseDate;
+	        		 obj.orderCode =orderCode;
+	        		 obj.noSend=noSend;
+	        	  }
+	        	numberGrid.resetData(result);
+	        	numberGrid.refreshLayout();
+	           $('#Dispatch-Number-Modal').modal('show');
+	        },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    });
+ }
+ //총 출고수량 grid2로 옮기기
+ $('#numberSaveBtn').on('click', function() {
+    let rowCount = numberGrid.getRowCount();
+    const changes = numberGrid.getModifiedRows();
+    let isValid = true;  // 유효성 검사를 위한 플래그
+
+    // 각 수정된 행의 'inventory'와 'releaseQuantity' 값을 검증
+    for (let i = 0; i < changes.updatedRows.length; i++) {
+        let row = changes.updatedRows[i];
+        let inventory = parseFloat(row.inventory);
+        let releaseQuantity = parseFloat(row.releaseQuantity);
+
+        if (inventory < releaseQuantity) {
+            toastr.error('재고보다 많은 수량을 기입하셨습니다.');
+            return;
+        }
+    }
+
+    // 미납기량보다 더 많은 출고량을 기입시 validation
+    let summaryValues = numberGrid.getSummaryValues('releaseQuantity');
+    let noSend = numberGrid.getValue(0, 'noSend');
+
+    // grid2에 값을 설정하고, disAdd 배열에 데이터 추가
+    grid2.setValue(clickEventRow, 'releaseQuantity', summaryValues.sum);
+
+    let numberRepository = [];
+    for (let i = 0; i < rowCount; i++) {
+        let row = numberGrid.getRow(i);
+        if (row.releaseQuantity > 0) {
+            let data = {
+                'prodReleaseCode': row.prodReleaseCode,
+                'orderCode': row.orderCode,
+                'orderDetailCode': row.orderDetailCode,
+                'lot': row.lot,
+                'releaseQuantity': row.releaseQuantity,
+                'noSend': row.noSend,
+                'prodCode': row.prodCode,
+                'releaseDate': getCurrentDate(),
+                'empCode': row.empCode
+               
+            };
+            numberRepository.push(data);
+        }
+    }
+
+    // 동일한 값을 가진 객체를 찾고 삭제
+    for (let i = 0; i < numberRepository.length; i++) {
+        let data = numberRepository[i];
+        let index = disAdd.findIndex(item => 
+            item.orderDetailCode === data.orderDetailCode
+        );
+        if (index !== -1) {
+            disAdd.splice(index, 1);
+        }
+    }
+
+    
+    //삭제 된 후에 본연 값 다시 추가
+    disAdd.splice(grid1EventRow, 0, ...numberRepository);
+    
+    disDetail.splice(grid1EventRow, 1, grid2.getData());
+    $('#Dispatch-Number-Modal').modal('hide');
+});
+ 
+ $('#saveBtn').on('click',function(ev){
+	 let disAddReal = disAdd.flat(Infinity);
+	 
+	 let disAddCheck = disAddReal.every(function(obj){
+		 return obj.releaseQuantity != 0
+	 })
+	 if(!disAddCheck){
+		 toastr.error('출고량을 입력하세요')
+		 return;
+	 }
+	 if(disAddReal.length==0){
+		 toastr.error('저장된 값이 없습니다.') 
+		 return;
+	 }
+	 //등록
+	 if(modifyCount == 0){
+		 $.ajax({
+		        url: "/dispatchAdd",
+		        method: "post",
+		        data: JSON.stringify(disAddReal),
+		        contentType: 'application/json',
+		        beforeSend : function(xhr) {
+	                xhr.setRequestHeader(header, token);
+	            },
+		        success: function(result) {
+		        	if(result=='fail'){
+		        		toastr.error('미납기량보다 더많은 값을 기입하셨습니다.');
+		        	}else{
+		        	$('#Sucess-modal h3').text("등록이 완료되었습니다.");
+		        	$('#nextLevel').text('등록완료')
+		        	$('#Sucess-modal').modal('show');
+		        	}
+		        },
+		        error: function(error) {
+		            console.error('AJAX 요청 실패:', error);
+		        }
+		    });
+	 }
+	 //수정
+	 else{
+		 $.ajax({
+		        url: "/dispatchModify",
+		        method: "post",
+		        data: JSON.stringify(disAddReal),
+		        contentType: 'application/json',
+		        beforeSend : function(xhr) {
+	                xhr.setRequestHeader(header, token);
+	            },
+		        success: function(result) {
+		        	if(result=='fail'){
+		        		toastr.error('주문량보다 더많은량을 수정하였습니다.')
+		        	}
+		        	else{
+		        	$('#Sucess-modal h3').text("수정이 완료되었습니다.");
+		        	$('#nextLevel').text('수정완료')
+		        	$('#Sucess-modal').modal('show');
+		           }
+		        },
+		        error: function(error) {
+		            console.error('AJAX 요청 실패:', error);
+		        }
+		    });
+	 }
+ })
+//삭제
+  $('#deleteBtn').on('click',function(ev){
+	  let data = grid2.getData();
+	  if(modifyCount != 1){
+		  toastr.error("등록중엔 삭제가 불가합니다.");
+		  return;
+	  }
+	  $.ajax({
+	        url: "/dispatchRemove",
+	        method: "post",
+	        data : JSON.stringify(data),
+	        contentType: 'application/json',
+	        beforeSend : function(xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+	        success: function(result) {
+	            if(result=='fail'){
+	            	toastr.error('예기치못한 오류 발생')
+	            }else{
+	            $('#Sucess-modal h3').text("삭제가 완료되었습니다.")
+	           	$('#nextLevel').text('삭제완료')
+	        	$('#Sucess-modal').modal('show');
+	            }
+	        },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    });
+	 
+  })
+ $('#nextLevel').on('click',function(ev){
+	$('#Sucess-modal').modal('hide');
+})
+
+$('#Sucess-modal').on('hidden.bs.modal', function (e) {
+	window.location.href = '/business/dispatch';
+})
+$('#resetBtn').on('click',function(){
+	//초기화작업
+    disDetail = [];
+	modifyCount = 0;
+	grid1EventRow= 0;
+	disAdd = [];
+ 
+	grid1.resetData([]);
+	grid2.resetData([]);
+})
+grid2.hideColumn("prodReleaseCode");
+grid2.hideColumn("empCode"); 
+grid2.hideColumn("orderDetailCode"); 
+numberGrid.hideColumn("orderDetailCode");
+numberGrid.hideColumn("prodReleaseCode");
+numberGrid.hideColumn("prodCode");
+numberGrid.hideColumn("noSend");
+numberGrid.hideColumn("empCode");
+//그리드 호버
+tui.Grid.applyTheme('default', {
+	row:{
+			hover:{
+					background:'#ccc'
+			}
+	}
+})
+</script>
+</html>

@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="com.aio.mes.dispatch.mapper.DispatchMapper">
+     <select id="simpleDispatchList" parameterType="DispatchSearchVO">
+        SELECT p.prod_release_code,
+      			 o.order_code,
+      			 s.prod_code,
+      			 o.due_date,
+      			 c.prod_name,
+      			 e.emp_name,
+      			 cl.client_name,
+      			 p.emp_code,
+      			 p.release_quantity,
+      			 p.release_date
+        FROM prod_release p JOIN orders o
+                ON p.order_code  = o.order_code
+                    JOIN emp e 
+                ON p.emp_code = e.emp_code
+                    JOIN prod_store s
+                ON  p.lot = s.lot
+                    JOIN prod_common c 
+                ON s.prod_code = c.prod_code
+                     JOIN client cl
+                ON o.client_code = cl.client_code
+           <where>
+         <if test="orderCode != null and !orderCode.equals('')">
+             AND o.order_code LIKE '%'||#{orderCode}||'%'
+        </if>
+         <if test="prodName != null and !prodName.equals('')">
+           AND c.prod_name LIKE '%'||#{prodName}||'%'
+         </if>
+          <if test="empName != null and !empName.equals('')">
+           AND e.emp_name LIKE '%'||#{empName}||'%'
+         </if>
+         </where>
+         ORDER BY prod_release_code DESC
+     </select>
+     <select id="dispatchCall" resultType="DispatchVO">
+     SELECT 
+  		   FIND_CLIENT_NAME (od.client_code) client_name, 
+    		e.emp_name, 
+    		c.prod_name, 
+    		o.prod_code,
+   		    r.emp_code,
+   		    o.order_code,
+    		o.order_quantity,
+    		o.order_detail_code,
+   		    NVL(SUM(r.release_quantity), 0) AS send,
+    		NVL(o.order_quantity, 0) - NVL(SUM(r.release_quantity), 0) AS no_send
+	FROM 
+   		   (SELECT 
+       			 order_code,
+        		 prod_code,
+        		 order_detail_code,
+        	SUM(order_quantity) AS order_quantity
+    		FROM 
+        		order_detail
+ 		   GROUP BY 
+       		 order_code,
+        	 prod_code,
+        	 order_detail_code) o
+	LEFT JOIN 
+    		orders od ON od.order_code = o.order_code
+	LEFT JOIN 
+    	prod_release r ON o.order_detail_code = r.order_detail_code
+	LEFT JOIN 
+    	prod_common c ON o.prod_code = c.prod_code
+	LEFT JOIN 
+ 	  	 emp e ON r.emp_code = e.emp_code
+	     WHERE o.order_code = #{orderCode}
+	GROUP BY 
+    		FIND_CLIENT_NAME (od.client_code),
+    		e.emp_name,
+    		c.prod_name,
+    		o.prod_code,
+    		r.emp_code,
+    		o.order_code,
+    		o.order_detail_code,
+    		o.order_quantity
+     </select>
+    <select id="dispatchModifyCall" resultType="DispatchVO">
+       SELECT 
+  		  cl.client_name, 
+    		e.emp_name, 
+    		c.prod_name, 
+    	    r.prod_release_code,
+    	    r.order_detail_code,
+    		o.prod_code,
+   		    r.emp_code,
+   		    o.order_code,
+    		o.order_quantity,
+   		    NVL(SUM(r.release_quantity), 0) AS send,
+    		NVL(SUM(o.order_quantity), 0) - NVL(SUM(r.release_quantity), 0) AS no_send
+	FROM 
+   		   (SELECT 
+       			 order_code,
+        		 prod_code,
+        		 order_detail_code,
+        	SUM(order_quantity) AS order_quantity
+    		FROM 
+        		order_detail
+ 		   GROUP BY 
+       		 order_code,
+        	 prod_code,
+        	 order_detail_code) o
+	LEFT JOIN 
+    		orders od ON od.order_code = o.order_code
+	LEFT JOIN 
+ 		   client cl ON cl.client_code = od.client_code
+	LEFT JOIN 
+    	prod_release r ON o.order_detail_code = r.order_detail_code
+	LEFT JOIN 
+    	prod_common c ON o.prod_code = c.prod_code
+	LEFT JOIN 
+ 	  	 emp e ON r.emp_code = e.emp_code
+	      WHERE r.prod_release_code = #{prodReleaseCode}
+	GROUP BY 
+	        r.prod_release_code,
+    		cl.client_name,
+    		e.emp_name,
+    		c.prod_name,
+    		r.order_detail_code,
+    		o.prod_code,
+    		r.emp_code,
+    		o.order_code,
+    		o.order_quantity
+    </select>
+     <select id="dispatchReady" resultType="DispatchVO">
+           SELECT
+    			s.lot,
+    			s.prod_code,
+   				 c.prod_name,
+    			SUM(NVL(s.store_quantity, 0)) - 
+   					 NVL((SELECT SUM(NVL(r.release_quantity, 0))
+             			 FROM prod_release r
+             			 WHERE r.lot = s.lot), 0) AS inventory
+		FROM 
+  			  prod_store s
+		LEFT JOIN 
+    			prod_common c ON s.prod_code = c.prod_code
+		WHERE 
+   			 s.prod_code = #{prodCode}
+		GROUP BY
+   			 s.lot,
+   			 c.prod_name,
+   			 s.prod_code
+		HAVING 
+   			 SUM(NVL(s.store_quantity, 0)) - 
+   			 NVL((SELECT SUM(NVL(r.release_quantity, 0))
+           		   FROM prod_release r
+            		  WHERE r.lot = s.lot), 0) > 0
+          ORDER BY TO_NUMBER(substr(s.lot,4)) 
+     </select>
+     <insert id="dispatchAdd" parameterType="DispatchVO">
+         <selectKey keyProperty="prodReleaseCode"   
+                    resultType="String"
+                    order="BEFORE">
+                SELECT 'PRELEASE'||(NVL(MAX(order_num),0) + 1) AS order_detail_code 
+               FROM (
+                    SELECT TO_NUMBER(SUBSTR(prod_release_code,9)) AS order_num
+                    FROM prod_release
+               )
+         </selectKey>
+        INSERT INTO prod_release(prod_release_code,
+                        order_code,
+                        order_detail_code,
+                        lot,
+                        release_quantity,
+                        release_date,
+                        emp_code)
+         VALUES (#{prodReleaseCode},
+                 #{orderCode},
+                 #{orderDetailCode},
+                 #{lot},
+                 #{releaseQuantity},
+                 sysdate,
+                 #{empCode})
+     
+     </insert>
+     <select id="quantityCheck" parameterType="DispatchVO">
+       SELECT 
+		NVL(o.order_quantity, 0) - NVL(SUM(r.release_quantity), 0) AS no_send
+		FROM 
+   		  	 (SELECT 
+       			 	order_code,
+        			 prod_code,
+        			 order_detail_code,
+        		SUM(order_quantity) AS order_quantity
+    			FROM 
+        			order_detail
+ 		   GROUP BY 
+       		 order_code,
+        	 prod_code,
+        	 order_detail_code) o
+             LEFT JOIN 
+    			orders od ON od.order_code = o.order_code
+            LEFT JOIN 
+        	prod_release r ON o.order_detail_code = r.order_detail_code
+        WHERE o.order_detail_code=#{orderDetailCode}
+        GROUP BY 
+            o.order_quantity
+     </select>
+     <select id="orderquantity" parameterType="DispatchVO">
+          SELECT order_quantity
+			FROM order_detail
+		  WHERE order_detail_code=#{orderDetailCode}
+     </select>
+     <update id="dispatchModify" parameterType="DispatchVO">
+         UPDATE prod_release
+            SET lot=#{lot},
+                release_quantity=#{releaseQuantity}
+          WHERE prod_release_code=#{prodReleaseCode}
+     </update>
+     <delete id="dispatchDelete" parameterType="DispatchVO">
+         DELETE FROM prod_release
+         WHERE prod_release_code=#{prodReleaseCode} 
+     </delete>
+     <update id="statusModify1" parameterType ="DispatchVO">
+         UPDATE order_detail
+		 SET process_status= #{processStatus}
+		 WHERE order_code= #{orderCode}
+		 AND prod_code=#{prodCode}
+     </update>
+     <select id="dispatchList" parameterType="DispatchVO">
+        SELECT  r.order_code,
+       			 FIND_ORDER_NAME(r.order_code) order_name,
+      		     FIND_CLIENT_NAME(o.client_code) client_name,
+       			 FIND_PROD_NAME(d.prod_code) prod_name,
+       			 FIND_EMP_NAME(r.emp_code) emp_name,
+        		 r.lot,
+       			 r.release_quantity,
+       			 o.registration_date,
+       			 r.release_date
+		 FROM    orders o JOIN prod_release r
+                   ON(o.order_code=r.order_code)            
+                 JOIN order_detail d
+                   ON (d.order_detail_code=r.order_detail_code)
+          <where>
+     <if test="orderCode != null and !orderCode.equals('')">
+            AND r.order_code LIKE '%'||#{orderCode}||'%'
+    </if>
+    <if test="orderName != null and !orderName.equals('')">
+            AND FIND_ORDER_NAME(r.order_code) LIKE '%'||#{orderName}||'%'
+    </if>
+    <if test="prodName != null and !prodName.equals('')">
+            AND FIND_PROD_NAME(d.prod_code) LIKE '%'||#{prodName}||'%'
+    </if>
+    <if test="clientName != null and !clientName.equals('')">
+            AND FIND_CLIENT_NAME(o.client_code) LIKE '%'||#{clientName}||'%'
+    </if>
+    <if test="empName != null and !empName.equals('')">
+            AND FIND_EMP_NAME(r.emp_code) LIKE '%'||#{empName}||'%'
+    </if>
+     <if test="lot != null and !lot.equals('')">
+            AND r.lot LIKE '%'||#{lot}||'%'
+    </if>
+    <if test="registrationDate2 != null and !registrationDate2.equals('')">
+             AND o.registration_date BETWEEN TO_DATE(#{registrationDate1}, 'YYYY-MM-DD')
+                			      AND TO_DATE(#{registrationDate2}, 'YYYY-MM-DD')
+     </if>
+     <if test="releaseDate2 != null and !releaseDate2.equals('')">
+             AND r.release_date BETWEEN TO_DATE(#{releaseDate1}, 'YYYY-MM-DD')
+                			      AND TO_DATE(#{releaseDate2}, 'YYYY-MM-DD')
+     </if>
+    
+     </where>
+     ORDER BY r.release_date DESC
+     </select>
+  </mapper>

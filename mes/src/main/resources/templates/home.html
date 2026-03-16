@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+ xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{common/layouts/default_layout}" 
+  layout:fragment="Content">
+<head>
+    <style>
+        body {
+            background-color: #f2f2f2;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .col-3 {
+            margin-top: 20px;
+            width: 23%;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border: 1px solid #ccc; 
+        }
+        .col-6 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            width: 780px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            padding: 20px;
+        }
+        
+        .chart-container {
+            text-align: center;
+        }
+        
+        .bi {
+            font-size: 35px;
+            line-height: 22px;
+        }
+    </style>
+</head>
+<body>
+    <div class="row">
+        <div class="col-3 border-primary"> 
+            <i class="bi bi-person-circle float-end text-primary"></i>
+            <b><p class="text-primary fs-6" id="jumun">금일 주문건수</p></b>
+              <b><p th:text="${todayOrder}+'건'"></p></b>
+        </div>
+        <div class="col-3 border-success"> 
+            <i class="bi bi-truck float-end text-success"></i>
+            <b><p class="text-success fs-6">금일 출고건수</p></b>
+             <b><p th:text="${todayRelease}+'건'"></p></b>
+        </div>
+        <div class="col-3 border-warning"> 
+            <i class="bi bi-box float-end text-warning"></i> 
+           <b><p class="text-warning fs-6">금일 발주건</p></b>
+           <b><p th:text="${todayMatRequired}+'건'"></p></b>
+        </div>
+        <div class="col-3 border-info"> 
+            <i class="bi bi-people-fill float-end text-info"></i>
+            <b><p class="text-info fs-6">금일 생산건</p></b>
+            <b><p th:text="${todayStore}+'건'"></p></b>
+        </div>
+        <div class="col-6">
+            <div class="chart-container">
+                <h3 class="fw-bold py-1 mb-4 text-muted fw-light float-start">매출량(일주일)</h3>
+                <div id="pieChart"></div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="chart-container">
+                <h3 class="fw-bold py-1 mb-4 text-muted fw-light float-start">자재입고량(일주일)</h3>
+                <div id="columnChart"></div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="chart-container">
+                <h3 class="fw-bold py-1 mb-4 text-muted fw-light float-start">요일별 주문수량</h3>
+                <div id="lineChart"></div>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="chart-container">
+                <h3 class="fw-bold py-1 mb-4 text-muted fw-light float-start">자재소모량(일주일)</h3>
+                <div id="columnChartCopy"></div>
+            </div>
+        </div>
+    </div>
+</body>
+<script th:inline="javascript">
+//csrf 토큰 넣을 값 가져오기
+const token = $("meta[name='_csrf']").attr("content")
+const header = $("meta[name='_csrf_header']").attr("content");
+const name = $("#userName").val();
+    //Pie 차트 데이터
+    let pieChartData = {
+            series: []
+    };
+    // 선 차트 데이터
+    const lineChartData = {
+        categories: [],
+        series: []
+    };
+ // 막대 차트 데이터
+     let columnChartData = {
+    categories: [],
+    series: [
+        {
+            name: '자재발주량',
+            data: [],
+            color: '#FF5733' 
+        }
+    ]
+};
+ // 막대 차트 데이터
+     let columnChartDataCopy= {
+        categories: [],
+        series: [
+        	{ name: '자재소모량',
+              data: [],
+              color: '#FF5733'
+              }
+        ]
+    };
+ //파이옵션
+    const barOptions = {
+            chart: {
+                width: 600,
+                height: 400
+            },
+            series: {
+                showLabel: true, 
+                dataLabels: {
+                    visible: true,
+                    anchor: 'outer'
+                },
+                radiusRange: {
+                    inner: '40%',
+                    outer: '100%',
+                  }
+            },
+            resizeAdaptation: true
+        };
+
+    //공통 옵션
+    const commonOptions = {
+        chart: { 
+         width: 750,
+         height: 400 
+       },
+        series: {
+            column: {
+                colorByCategories: true, 
+            }
+        },
+        resizeAdaptation: true
+    };
+    
+    //원형 차트 생성 및 렌더링
+    function pieStart(){
+    const pieChartContainer = document.getElementById('pieChart');
+    const pieChart = new toastui.Chart.pieChart({ 
+    	el: pieChartContainer,
+    	data: pieChartData,
+    	options: barOptions });
+    }
+    // 수직 막대형 차트 생성 및 렌더링
+    function start() {
+    const columnChartContainer = document.getElementById('columnChart');
+    const columnChart = new toastui.Chart.columnChart({ 
+    	el: columnChartContainer,
+    	data: columnChartData,
+    	options: commonOptions });
+    }
+    // 수직 막대형 차트 생성 및 렌더링
+    function usedStart(){
+    const columnChartContainerCopy = document.getElementById('columnChartCopy');
+    const columnChartCopy = new toastui.Chart.columnChart({
+    	el: columnChartContainerCopy,
+    	data: columnChartDataCopy,
+    	options: commonOptions });
+    }
+ // 선 차트 생성
+    const lineChart = new toastui.Chart.lineChart({
+        el: document.getElementById('lineChart'),
+        data: lineChartData,
+        options: commonOptions
+    });
+
+    function orderChrt() {
+         $.ajax({
+            url: "/main/orderChart",
+            method: "POST",
+            dataType: "json",
+            contentType: "application/json; charset=UTF-8",
+          //추가해야 하는 부분
+            beforeSend : function(xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+            success: function(list) {
+            	orderRendering(list);
+            },
+            error: function(xhr, status, error) {
+                console.error(xhr.responseText);
+            }
+        });
+    }
+    
+function orderRendering(list){
+	 
+	 let seriesData = list.map(item => ({
+         name: item.prodName,
+         data: parseFloat(item.percentage)
+     }));
+	
+	 pieChartData={
+         series: seriesData
+     };
+	 pieStart();
+}
+function matChrt() {
+    $.ajax({
+       url: "/main/matChart",
+       method: "POST",
+       dataType: "json",
+       contentType: "application/json; charset=UTF-8",
+     //추가해야 하는 부분
+       beforeSend : function(xhr) {
+           xhr.setRequestHeader(header, token);
+       },
+       success: function(list) {
+       		matRendering(list);
+       },
+       error: function(xhr, status, error) {
+           console.error(xhr.responseText);
+       }
+   });
+}
+function matRendering(list){
+	let categories = list.map(item => item.matName);
+	 let come = list.map(item => item.come);
+	 const seriesData = [
+		    {
+		        name: '자재발주량',
+		        data: come,
+		        colorByCategories: true,
+		    }
+		];
+	 columnChartData={
+		    categories: categories, 
+		    series: seriesData,
+		    
+		    
+		};
+	 start();
+}
+function orderLineChart() {
+    $.ajax({
+       url: "/main/orderLine",
+       method: "POST",
+       dataType: "json",
+       contentType: "application/json; charset=UTF-8",
+     //추가해야 하는 부분
+       beforeSend : function(xhr) {
+           xhr.setRequestHeader(header, token);
+       },
+       success: function(list) {
+    	 orderLineRendering(list);
+       },
+       error: function(xhr, status, error) {
+           console.error(xhr.responseText);
+       }
+   });
+}
+function orderLineRendering(list){
+	let categories = list.map(item => item.day);
+	 let sumOrderQuantity = list.map(item => parseFloat(item.orderQuantity));
+	 lineChart.setData({
+    	 categories: categories,
+    	 series:[
+    		 { name: '요일별 주문수량',
+    		   data: sumOrderQuantity
+    		 }
+    	   ], 
+    }); 
+} 
+
+function matUsedChrt() {
+    $.ajax({
+       url: "/main/matUsedChart",
+       method: "POST",
+       dataType: "json",
+       contentType: "application/json; charset=UTF-8",
+     //추가해야 하는 부분
+       beforeSend : function(xhr) {
+           xhr.setRequestHeader(header, token);
+       },
+       success: function(list) {
+       		matUsedRendering(list);
+       },
+       error: function(xhr, status, error) {
+           console.error(xhr.responseText);
+       }
+   });
+}
+function matUsedRendering(list){
+	let categories = list.map(item => item.matNamed);
+	 let matUsed = list.map(item => item.matUsed);
+	 const seriesData = [
+		    {
+		        name: '자재소모량',
+		        data: matUsed,
+		        colorByCategories: true,
+		    }
+		];
+	 columnChartDataCopy={
+		    categories: categories, 
+		    series: seriesData,
+		    
+		    };
+	 usedStart();
+}
+
+$(document).ready(function(){
+	orderChrt();
+	matChrt();
+	orderLineChart();
+	matUsedChrt();
+});    
+</script>
+</html>

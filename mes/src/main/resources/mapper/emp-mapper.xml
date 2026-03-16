@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   <mapper namespace="com.aio.mes.manager.mapper.EmployeeMapper">
+   
+   <select id="empList" parameterType="empVO">
+       SELECT emp_code,
+     		  emp_name,
+      		  tel,
+       		  email,
+       	      rank,
+       		  birth_date,
+      		  dept_id
+		FROM  emp
+	  <where>
+	   <if test="rank != null and !rank.equals('')">
+            AND rank= #{rank} 
+      </if>
+       <if test="deptId != null and !deptId.equals('')">
+           AND dept_id LIKE '%'||#{deptId}||'%'
+      </if>
+       <if test="empName != null and !empName.equals('')">
+           AND emp_name LIKE '%'||#{empName}||'%'
+      </if>
+      </where>
+      ORDER BY emp_code DESC
+   </select>
+   <insert id="empAdd" parameterType="empVO">
+     INSERT INTO emp(emp_code,
+                password,
+                emp_name,
+                tel,
+                email,
+                rank,
+                birth_date,
+                dept_id)
+		VALUES (#{empCode},
+		<choose>
+		<when test="password != null and !password.equals('')">
+		     #{password},
+		</when>
+		<otherwise>
+        	'$2a$10$6SyT5kux10Cl9ZAAzWDkT.Fv523NRs6PdYXqQ6fseai/Y.RD39Tfy',
+        </otherwise>
+        </choose>
+        		#{empName},
+       		    #{tel},
+       		    #{email},
+        		#{rank},
+        		#{birthDate},
+        		#{deptId})
+   </insert>
+   <update id="empModify" parameterType="empVO">
+        UPDATE emp
+		  SET tel=#{tel},
+	 <if test="password != null and !password.equals('')">
+		 	password=#{password},
+      </if>
+    	email=#{email},
+    	rank=#{rank},
+    	dept_id=#{deptId},
+    	emp_name=#{empName},
+    	birth_date=#{birthDate}
+	WHERE emp_code=#{empCode}
+   </update>
+   <delete id="empDelete" parameterType="empVO">
+       DELETE FROM emp
+       WHERE emp_code=#{empCode}
+   </delete>
+   </mapper>

@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout}"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<link th:href="@{/css/matmanagement.css}" rel="stylesheet">
+
+<!-- 선택된 행의 배경색을 설정하는 CSS 스타일 추가 -->
+<style>
+.selected-row {
+	background-color: green; 
+}
+</style>
+
+</head>
+<body>
+	<div class="container">
+		<h3 style="margin-top: 50px; font-weight: bold">검사처리 관리</h3>
+		<nav class="order-nav">
+			<!-- 모달창을 띄우는 버튼들 -->
+			<button type="button" class="btn btn-outline-dark"
+				data-bs-toggle="modal" data-bs-target="#search-workProgress-Modal">조회</button>
+		</nav>
+
+		<div id="grid-main-top"></div>
+		<!-- 메인 그리드 -->
+
+		<br>
+
+		<h3 style="margin-top: 50px; font-weight: bold">검사처리 상세</h3>
+		<nav class="order-nav">
+			<!-- 상세 그리드의 추가/삭제 버튼 -->
+			<input type='button' class="btn btn-outline-success" id="main-top-save-btn" value="검사처리">
+		</nav>
+
+		<div id="grid-main-bottom"></div>
+		<!-- 상세 그리드 -->
+	</div>
+
+	<!-- 작업 찾기 모달 -->
+	<div class="modal fade" id="search-workProgress-Modal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-4 order-search-title"
+						id="exampleModalLabel">작업지시 간단 조회</h1>
+
+					<div class="order-search-nav">
+						<!-- 검색 조건 설정 -->
+						<div class="form-check form-check-inline">
+							<input class="form-check-input" type="radio"
+								name="flexRadioDefault" id="flexRadioDefault1" value="workName"
+								checked> <label class="form-check-label"
+								for="flexRadioDefault1"> 작업명 </label>
+						</div>
+						<div class="form-check form-check-inline">
+							<input class="form-check-input" type="radio"
+								name="flexRadioDefault" id="flexRadioDefault2" value="prodName">
+							<label class="form-check-label" for="flexRadioDefault2">
+								제품명 </label>
+						</div>
+
+
+						<!-- 검색 입력창 -->
+						<input class="form-control me-2 order-search"
+							id="modal-search-workProgress-input" type="search"
+							placeholder="Search" aria-label="Search">
+						<!-- 검색 버튼 -->
+						<button class="btn btn-outline-success"
+							id="modal-workProgress-search-btn" type="submit">검색</button>
+					</div>
+
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div id="grid-modal-workProgress"></div>
+					<!-- 모달 내의 그리드 -->
+				</div>
+				<div class="modal-footer"></div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 확인 모달 -->
+	<div class="modal fade" id="confirm-modal" tabindex="-1"
+		aria-labelledby="confirmModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="confirmModalLabel">검사 진행</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">해당 검사를 진행하시겠습니까?</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary" id="confirm-yes-btn">예</button>
+					<button type="button" class="btn btn-secondary"
+						data-bs-dismiss="modal" id="confirm-no-btn">아니요</button>
+
+				</div>
+			</div>
+		</div>
+	</div>
+
+</body>
+<script th:inline="javascript">
+const token = $("meta[name='_csrf']").attr("content")
+const header = $("meta[name='_csrf_header']").attr("content");
+
+        let selectedRowKey = null; // 선택된 행의 키를 저장하는 변수
+        let grid2; // grid2를 전역 변수로 선언
+        let rowData = null; // 수정할 행을 저장하는 변수
+        // 메인 그리드 설정
+        const grid = new tui.Grid({
+            el: document.getElementById('grid-main-top'), 
+            scrollX: true,
+            scrollY: true,
+            minBodyHeight: 55,
+            bodyHeight: 55,
+            rowHeight: 1,
+            rowHeaders: [{ type: 'rowNum' }, { type: 'checkbox' }], 
+            pageOptions: { useClient: true, perPage: 5 }, 
+            columns: [
+                { header: '작업지시명', name: 'workName' , align: 'center' }, 
+                { header: '작업지시코드', name: 'workInstructDetailCode', align: 'center' }, 
+                { header: '작업진행코드' , name :'workProgressCode', align:'center' , hidden: true},
+                { header: '제품명', name: 'prodName', align: 'center' }, 
+                { header: '단위', name: 'unit', align: 'center' , hidden: true }, 
+                { header: '지시량', name: 'instructQuantity', align: 'center' }, 
+                { header: '불량량', name: 'errorQuantity', align: 'center' },
+                { header: '생산량', name: 'prodQuantity', align: 'center' }, 
+                { header: '기검사량', name: 'inputQuantity', align: 'center' },
+                { header: '미검사량', name: 'availableQuantity', align: 'center'},  
+                { header: '기업코드', name:'entMemberCode' , hidden: true} 
+            ],
+        });
+
+        // 상세 그리드 설정
+        grid2 = new tui.Grid({
+            el: document.getElementById('grid-main-bottom'), 
+            scrollX: true,
+            scrollY: true,
+            rowHeaders: [  { type: 'rowNum' }, { type: 'checkbox' }],
+            pageOptions: { useClient: true, perPage: 10 },
+            columns: [
+                { header: '검사코드', name : 'testProcessCode' , align: 'center' , hidden: true}, 
+                { header: '작업지시코드', name: 'workInstructDetailCode' , align: 'center' }, 
+                { header: '작업진행코드' , name :'workProgressCode', align:'center' , hidden: true}, 
+                { header: '제품명', name: 'prodName' , align: 'center' },
+                { header: '검사명', name: 'testName' , align: 'center' }, 
+                //{ header: '검사 담당자', name: 'empCode' , align: 'center' }, 
+                { header: '검사등록일자', name: 'testDate' , editor: 'datePicker', align: 'center' }, 
+                { header: '검사기준', name:'passCriteria' , align: 'center' },
+                { header: '검사량', name: 'testQuantity' , align: 'right' ,editor : 'text' ,validation : {
+                    dataType: 'number',
+                    required:'true'
+                   }},
+                { header: '불량량', name: 'errorQuantity' ,editor : 'text', align: 'right' ,validation : {
+                    dataType: 'number',
+                    required:'true'
+                   }}, 
+                { header: '합격량', name: 'passQuantity' , align: 'right' }, 
+                { header: '비고', name: 'note' , align: 'center' , editor: 'text'}, 
+                { header: '검사유무', name:'status' , align: 'center'},
+                { header: '검사흐름도코드', name: 'testFlowCode' , editor : 'text', align: 'center' , hidden: true},
+                { header: '기업코드', name:'entMemberCode' , align: 'center' , hidden: true} 
+            ],
+
+            // 요약 행 설정
+            summary: {
+                height: 20,
+                position: 'bottom', 
+                columnContent: {
+                    passQuantity: {
+                        template: function(valueMap) { 
+                            if (typeof grid2 !== 'undefined' && grid2 !== null) {
+                                let data = grid2.getData(); // 그리드의 데이터 가져오기
+                                let lastRow = data[data.length - 1] || {}; // 마지막 행의 데이터 가져오기
+                                return `총 생산량: ${lastRow.passQuantity || 0}`; // 마지막 행의 합격량을 표시
+                            }
+                            return '총 생산량: 0'; // 데이터가 없을 경우 'TOTAL: 0'을 표시
+                        }
+                    },
+                    errorQuantity: {
+                        template: function(valueMap) {
+                          return `불량량: ${valueMap.sum}`;
+                        }
+                      }
+                    }
+                }
+            
+        });
+        // 모든 셀을 비활성화하는 함수
+        function disableGrid2Editing() {
+            let data = grid2.getData();
+            data.forEach((row, rowKey) => {
+                grid2.disable();
+            });
+        }
+
+     // 모든 셀을 활성화하는 함수
+        function enableGrid2Editing() {
+            grid2.enable();
+        }
+        // 검사 처리 데이터 조회 함수
+        function getworkProgressData(){
+            let result;
+            $.ajax({
+                url: '/test/inspectList', 
+                method: 'get', 
+                beforeSend : function(xhr) {
+                    xhr.setRequestHeader(header, token);
+                },
+                async: false, 
+                success: function(data){
+                    result = data; 
+                },
+                error: function(error){
+                    toastr.error('에러'); 
+                }
+            })
+            return result
+        }
+
+        // 모달 그리드 설정
+        const workProgressModalGrid = new tui.Grid({
+            el: document.getElementById('grid-modal-workProgress'), 
+            scrollX: false,
+            scrollY: false,
+            pageOptions: {
+                perPage: 5, 
+                useClient: true,
+            },
+            columns: [
+                { header: '공정순서', name: 'procNum', align: 'center' }, 
+                { header: '작업지시명', name: 'workName' , align: 'center' }, 
+                { header: '작업지시코드', name: 'workInstructDetailCode', align: 'center' }, 
+                { header: '작업진행코드' , name :'workProgressCode', align:'center' , hidden: true},
+                { header: '제품명', name: 'prodName', align: 'center' }, 
+                { header: '지시량', name: 'instructQuantity', align: 'center' , hidden: true},
+                { header: '투입량', name: 'inputQuantity', align: 'center' , hidden: true},
+                { header: '검사항목', name: 'procName', align: 'center' },
+                { header: '공정상태', name: 'progress', align: 'center' },
+                { header: '검사유무', name: 'testStatus', align: 'center' ,
+                    renderer:{
+                  	  styles:{
+                  		fontWeight: 'bold',
+                  		  backgroundColor:(props) => props.value == '검사가능'?  'rgba(252, 240, 3)'
+                  		  : props.value == '검사중'?  'rgba(252, 3, 45)'
+                  		  : props.value == '검사완료'?  'rgba(3, 252, 65)' :''
+                  	  }
+                    } },  
+                { header: '생산량', name: 'prodQuantity', align: 'center' , hidden: true},
+                { header: '기업코드', name:'entMemberCode' , hidden: true}
+            ],
+        });
+     // 모달이 열릴 때 데이터 로드
+        $('#search-workProgress-Modal').on('shown.bs.modal', function(){
+            let data = getworkProgressData(); // 검사 처리 데이터 조회
+            console.log(data);
+
+            data = data.map(row => {
+                let availableQuantity = row.instructQuantity - row.inputQuantity; // 지시량에서 투입량을 뺀 값을 검사가능량으로 설정
+                let progress = row.progress;
+
+                if (row.inputQuantity == 0) { // 전 공정이 N인 경우 검사중으로 설정
+                    row.testStatus = '검사가능';
+                }  else if (row.inputQuantity > 0 && availableQuantity > 0 || progress == 'N') {
+                    row.testStatus = '검사중';
+                }	else if (availableQuantity == 0 && row.inputQuantity > 0) {
+                    row.testStatus = '검사완료';
+                }
+                
+                return row;
+            });
+            
+            workProgressModalGrid.resetData(data); 
+            workProgressModalGrid.refreshLayout(); 
+        });
+
+     // 모달이 닫힐 때 데이터 초기화
+        $('#search-workProgress-Modal').on('hidden.bs.modal', function(){
+            $('input:radio[name="flexRadioDefault"]').prop('checked', false); // 모든 라디오 버튼 체크 해제
+            $('input:radio[name="flexRadioDefault"]').first().prop('checked', true); // 첫 번째 라디오 버튼 체크
+            $('#modal-select').val("ALL"); // 상태 선택 드롭다운을 '전체'로 설정
+            $('#modal-search-workProgress-input').val(''); // 검색 입력창 초기화
+            workProgressModalGrid.resetData([]); // 모달 그리드의 데이터 초기화
+            workProgressModalGrid.refreshLayout(); // 그리드 레이아웃을 새로 고침
+
+            // 상세 그리드의 데이터 초기화
+            grid2.resetData([]);
+            grid2.refreshLayout();
+        });
+
+     // 검색 버튼 클릭 시 데이터 검색
+        $('#modal-workProgress-search-btn').on('click', function(){
+            let radioData = $('input:radio[name="flexRadioDefault"]:checked').val(); // 선택된 라디오 버튼의 값
+            let selectData = $('#modal-select option:selected').val(); // 선택된 상태 값
+            let inputData = $('#modal-search-workProgress-input').val(); // 검색 입력창의 값
+
+            let data = {
+                radioVal: radioData,
+                selectVal: selectData,
+                inputVal: inputData
+            };
+
+            let foundData = searchWorkProgressData(data); // 검색 조건에 맞는 데이터 조회
+
+            foundData = foundData.map(row => {
+                let availableQuantity = row.instructQuantity - row.inputQuantity; // 검사가능량 계산
+                let progress = row.progress;
+                console.log("progress: " + progress);
+
+                if (row.inputQuantity == 0) { // 전 공정이 N인 경우 검사중으로 설정
+                    row.testStatus = '검사가능';
+                }  else if (row.inputQuantity > 0 && availableQuantity > 0 || progress == 'N') {
+                    row.testStatus = '검사중';
+                }	else if (availableQuantity == 0 && row.inputQuantity > 0) {
+                    row.testStatus = '검사완료';
+                }
+                
+                return row;
+            });
+
+            workProgressModalGrid.resetData(foundData != null ? foundData : []); // 검색된 데이터를 모달 그리드에 설정
+            workProgressModalGrid.refreshLayout(); 
+        });
+
+        // 불량량과 검사량을 비교하여 합격량 계산
+        function calQuantity(testQuantity, errorQuantity) {
+            return testQuantity - errorQuantity;
+        }
+		
+        function checkAvailableQuantity(testQuantity, availableQuantity) {
+            return testQuantity > availableQuantity;
+        }
+        
+        // 불량량이 검사량을 초과하는지 확인
+        function checkQuantity(testQuantity, errorQuantity) {
+            return errorQuantity > testQuantity;
+        }
+        
+        function passQuantity(testQuantity, firstQuantity){
+        	return testQuantity = firstQuantity;
+        }
+    	
+        
+        let selectWiCode = ""; // 선택된 작업지시코드
+        let selectProdName = ""; // 선택된 제품명
+        let instructQuantity = 0; // 검사량
+
+     // 작업지시 상세 정보를 가져오는 함수
+        function getWpProd(workProgressCode) {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: '/test/inspectListInfo', // 데이터 조회 URL
+                    method: 'GET', // GET 방식으로 요청
+                    beforeSend : function(xhr) {
+                        xhr.setRequestHeader(header, token);
+                    },
+                    data: { workProgressCode: workProgressCode }, // 작업지시코드 전달
+                    success: function (result) {
+                        console.log(result);
+                        grid2.resetData(result); // 상세 그리드에 데이터 설정
+                        grid2.refreshLayout(); // 그리드 레이아웃을 새로 고침
+                        resolve(result);
+                    },
+                    error: function (error) {
+                        console.error('에러', error); // 에러 메시지 출력
+                        reject(error);
+                    }
+                });
+            });
+        }
+        
+        // 다음 행 업데이트 함수
+        function updateFollowingRows(startRowKey) {
+            let data = grid2.getData(); // 상세 그리드의 데이터 가져오기
+            let previousRow = data[startRowKey]; // 시작 행의 데이터
+            for (let i = startRowKey + 1; i < data.length; i++) { // 시작 행 이후의 모든 행에 대해
+                let currentRow = data[i]; // 현재 행의 데이터
+                let newTestQuantity = calQuantity(previousRow.testQuantity, previousRow.errorQuantity); // 새로운 검사량 계산
+                grid2.setValue(i, 'testQuantity', newTestQuantity); // 현재 행의 검사량 설정
+                grid2.setValue(i, 'passQuantity', calQuantity(newTestQuantity, currentRow.errorQuantity)); // 현재 행의 합격량 설정
+                previousRow = currentRow; // 이전 행을 현재 행으로 업데이트
+            }
+        }
+        
+     // 메인 그리드에서 행 클릭 시 상세 정보 로드
+        grid.on("click", (e) => {
+            // 선택된 행의 rowKey 가져오기
+            selectedRowKey = e.rowKey;
+
+            // 선택된 행의 workProgressCode 가져오기
+            selectWiCode = grid.getValue(e.rowKey, "workProgressCode");
+
+            // 작업지시 상세 정보를 가져오고 grid2의 첫 행의 검사량 설정
+            getWpProd(selectWiCode).then(() => {
+                let selectedRow = grid.getRow(e.rowKey); // 현재 클릭된 행의 데이터를 가져옴
+                if (selectedRow) {
+                    let availableQuantity = selectedRow.instructQuantity - selectedRow.inputQuantity; // availableQuantity 변수를 여기서 정의
+                    selectedRow.availableQuantity = availableQuantity; // availableQuantity 값 설정
+
+                    // grid2의 첫 번째 행을 제외한 나머지 행의 검사량을 0으로 설정
+                    let data = grid2.getData();
+                    data.forEach((row, index) => {
+                        if (index >= 0) {
+                            grid2.setValue(index, 'testQuantity', 0);
+                            grid2.setValue(index, 'errorQuantity', 0);
+                            grid2.setValue(index, 'passQuantity', 0);
+                        }
+                    });
+                    grid2.setValue(0, 'testQuantity', availableQuantity);
+
+                    // 미검사량이 0이면 grid2 비활성화
+                    if (availableQuantity == 0) {
+                        disableGrid2Editing();
+                        toastr.error('모든 검사를 끝낸 상태입니다. 수정 할 수가 없습니다.');
+                    } else {
+                        enableGrid2Editing();
+                    }
+
+                    // 상태에 따라 편집 활성화 또는 비활성화
+                    let status = grid.getValue(e.rowKey, "status"); // 상태 가져오기
+                    if (status == '검사완료') {
+                        disableGrid2Editing(); // 상태가 검사완료인 경우 편집 비활성화
+                    } else if (availableQuantity != 0) {
+                        enableGrid2Editing(); // 상태가 검사완료가 아닌 경우 편집 활성화
+                    }
+                }
+            });
+        });
+
+
+// 저장 버튼 클릭 시 수정된 데이터 저장 및 메인 그리드의 생산량 업데이트
+const saveBtn = document.getElementById('main-top-save-btn'); // 저장 버튼 가져오기
+saveBtn.addEventListener('click', () => {
+    let changes = grid2.getModifiedRows(); // 수정된 행 가져오기
+    if (!changes.createdRows.length && !changes.updatedRows.length) { // 수정된 행이 없으면
+        alert('해당 작업지시의 검사를 처리하시지 않았습니다.'); // 경고 메시지 표시
+        return;
+    }
+
+    let valid = true; // 유효성 검사 변수
+    let data = grid2.getData(); // 상세 그리드의 모든 데이터 가져오기
+
+    changes.updatedRows.forEach((row, index) => { // 수정된 각 행에 대해
+        if (!validateRow(row, index, data)) {
+            valid = false;
+        }
+    });
+
+    if (!valid) {
+        return; // 유효성 검사 실패 시 함수 종료
+    }
+
+    // 첫 번째 행의 검사량 가져오기
+    let firstRowTestQuantity = grid2.getValue(0, 'testQuantity');
+
+    // 마지막 행의 합격량 가져오기
+    let lastRowPassQuantity = grid2.getValue(data.length - 1, 'passQuantity') || 0;
+
+    // 불량량 합계 구하기
+    let totalErrorQuantity = 0;
+    data.forEach(row => {
+        totalErrorQuantity += Number(row.errorQuantity || 0);
+    });
+
+    // 검사 완료된 항목만 필터링
+    let completedRows = changes.updatedRows.filter(row => row.status == '검사완료');
+
+    if (completedRows.length > 0) {
+    	console.log(completedRows)
+    	console.log(JSON.stringify(completedRows))
+        $.ajax({
+            type: 'PUT', 
+            url: '/test/inspect', 
+            contentType: 'application/json',
+            beforeSend : function(xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+            data: JSON.stringify(completedRows), 
+            success: function (response) {
+                //toastr.success('수정된 데이터가 저장되었습니다.'); 
+                //grid2.resetOriginData(); 
+                getWpProd(selectWiCode).then(() => {
+                    let selectedRow = grid.getRow(selectedRowKey);
+
+                    if (selectedRow) {
+                        // grid1의 기검사량과 생산량, 불량량 업데이트
+                        selectedRow.inputQuantity += Number(firstRowTestQuantity);
+                        selectedRow.prodQuantity += Number(lastRowPassQuantity);
+                        selectedRow.errorQuantity += totalErrorQuantity;
+
+                        // 서버로 업데이트 요청
+                        $.ajax({
+                            type: 'PUT',
+                            url: '/test/updateQuantity',
+                            contentType: 'application/json',
+                            beforeSend : function(xhr) {
+                                xhr.setRequestHeader(header, token);
+                            },
+                            data: JSON.stringify({
+                                workProgressCode: selectedRow.workProgressCode,
+                                prodQuantity: selectedRow.prodQuantity,
+                                inputQuantity: selectedRow.inputQuantity,
+                                errorQuantity: selectedRow.errorQuantity,
+                                instructQuantity: selectedRow.instructQuantity
+                            }),
+                            success: function (response) {
+                                //toastr.success('생산량이 업데이트되었습니다.'); // 성공 메시지 표시
+                                console.log("response : " + response);
+
+                                // 다음 공정의 지시량 업데이트
+                                let workInstructDetailCode = selectedRow.workInstructDetailCode;
+                                let currentProcNum = selectedRow.procNum; // currentProcNum 가져오기
+
+                                $.ajax({
+                                    type: 'GET',
+                                    url: '/test/getNextProcess',
+                                    beforeSend : function(xhr) {
+                                        xhr.setRequestHeader(header, token);
+                                    },
+                                    data: { workInstructDetailCode: workInstructDetailCode, currentProcNum: currentProcNum },
+                                    success: function (nextProcess) {
+                                        if (nextProcess) {
+                                            let nextWorkInstructDetailCode = nextProcess.workInstructDetailCode;
+                                            let prodQuantity = selectedRow.prodQuantity;
+                                            let procNum = selectedRow.procNum;
+                                            let nextProcNum = procNum + 1;
+                                            $.ajax({
+                                                type: 'PUT',
+                                                url: '/test/updateNextProc',
+                                                contentType: 'application/json',
+                                                beforeSend : function(xhr) {
+                                                    xhr.setRequestHeader(header, token);
+                                                },
+                                                data: JSON.stringify({
+                                                    workInstructDetailCode: nextWorkInstructDetailCode,
+                                                    prodQuantity: prodQuantity,
+                                                    procNum: nextProcNum
+                                                }),
+                                                success: function (response) {
+                                                    selectedRow.availableQuantity = selectedRow.instructQuantity - selectedRow.inputQuantity;
+
+                                                    // grid1의 데이터 새로고침
+                                                    grid.setValue(selectedRowKey, 'availableQuantity', selectedRow.availableQuantity);
+                                                    grid.setValue(selectedRowKey, 'prodQuantity', selectedRow.prodQuantity);
+                                                    grid.setValue(selectedRowKey, 'inputQuantity', selectedRow.inputQuantity);
+                                                    grid.setValue(selectedRowKey, 'errorQuantity', selectedRow.errorQuantity);
+                                                    grid.refreshLayout();
+                                                    toastr.success('다음 공정의 지시량이 업데이트되었습니다.');
+                                                    
+                                                    selectedRow = grid.getRow(selectedRowKey);
+                                                    console.log("selectedRow.workProgressCode : " + selectedRow.workProgressCode);
+                                                    if (selectedRow && selectedRow.instructQuantity == Number(selectedRow.inputQuantity)) {
+                                                        $.ajax({
+                                                          type: 'PUT',
+                                                          url: '/test/updateProgress',
+                                                          contentType: 'application/json',
+                                                          beforeSend : function(xhr) {
+                                                              xhr.setRequestHeader(header, token);
+                                                          },
+                                                          data: JSON.stringify({
+                                                              workInstructDetailCode: selectedRow.workInstructDetailCode,
+                                                              workProgressCode: selectedRow.workProgressCode,
+                                                              procNum: selectedRow.procNum
+                                                              
+                                                              
+                                                            }),
+                                                            success: function(response) {
+                                                                if (response.status == "성공") {
+                                                                    toastr.success(response.message);
+                                                                    console.log(response);
+                                                              } else {
+                                                                    toastr.error(response.message);
+                                                                }
+                                                            },
+                                                        error: function(error) {
+                                                                toastr.error('공정 상태 수정 실패.');
+                                                                console.error('에러:', error);
+                                                            }
+                                                        });
+                                                    } else {
+                                                        toastr.error('지시량과 기검사량이 일치하지 않거나 전 공정이 끝나지 않았습니다.');
+                                                    }
+                                                },
+                                                error: function (error) {
+                                                    toastr.error('다음 공정의 지시량 업데이트 중 오류가 발생하였습니다.');
+                                                    console.error('다음 공정 지시량 업데이트 오류:', error);
+                                                }
+                                            });
+                                        }
+                                    },
+                                    error: function (error) {
+                                        toastr.error('다음 공정 정보를 가져오는 중 오류가 발생하였습니다.');
+                                        console.error('다음 공정 정보 오류:', error);
+                                    }
+                                });
+
+                                grid.resetData([selectedRow]);
+                                grid.refreshLayout(); 
+                            },
+                            error: function (error) {
+                                toastr.error('생산량 업데이트 중 오류가 발생하였습니다.'); 
+                                console.error('생산량 업데이트 오류:', error);
+                            }
+                        });
+                    }
+                });
+            },
+            error: function (error) {
+                toastr.error('수정된 데이터를 저장하는 중 오류가 발생하였습니다.'); // 에러 메시지 표시
+                console.error('수정 오류:', error);
+            }
+        });
+    } else {
+        toastr.info('검사 완료된 데이터가 없습니다.'); // 정보 메시지 표시
+    }
+});
+	
+//유효성 검사 함수
+function validateRow(row, index, data) {
+    if (checkQuantity(row.testQuantity, row.errorQuantity)) {
+        toastr.error('불량량이 검사량을 초과할 수 없습니다.');
+        return false;
+    }
+
+    if (index > 0) {
+        let prevRow = data[index - 1];
+        if (prevRow.passQuantity != row.testQuantity) {
+            toastr.error('모든 불량량을 입력해주세요');
+            return false;
+        }
+    }
+
+    let selectedRow = grid.getRow(selectedRowKey);
+    if (!selectedRow) {
+        toastr.error('선택된 행의 데이터를 가져오지 못했습니다.');
+        return false;
+    }
+
+    if (index == 0 && checkAvailableQuantity(row.testQuantity, selectedRow.availableQuantity)) {
+        toastr.error('검사량이 미검사량을 초과할 수 없습니다.');
+        return false;
+    }
+
+    row.passQuantity = calQuantity(row.testQuantity, row.errorQuantity);
+    return true;
+}
+	
+ // 상세 그리드에서 편집 완료 시 데이터 검증 및 합격량 계산
+    grid2.on('editingFinish', (ev) => {
+        let { rowKey, columnName, value, prevValue } = ev;
+        let row = grid2.getRow(rowKey);
+        if (columnName === 'errorQuantity' || columnName === 'testQuantity') {
+            let errorQuantity = Number(grid2.getValue(rowKey, 'errorQuantity')) || 0;
+            let testQuantity = Number(grid2.getValue(rowKey, 'testQuantity')) || 0;
+
+            if (checkQuantity(testQuantity, errorQuantity)) {
+                toastr.error('불량량이 검사량을 초과할 수 없습니다.');
+                return; 
+            }
+            updateFollowingRows(rowKey);
+            grid2.setValue(rowKey, 'errorQuantity', errorQuantity); 
+            grid2.setValue(rowKey, 'testQuantity', testQuantity); 
+            grid2.setValue(rowKey, 'passQuantity', calQuantity(testQuantity, errorQuantity)); 
+            
+            grid2.setValue(rowKey, 'status', '검사완료'); // 검사 완료 상태 설정
+
+            // 검사 완료 상태를 DB에 저장
+            $.ajax({
+                type: 'PUT',
+                url: '/test/updateStatus', // 검사 완료 상태를 업데이트할 서버의 URL
+                contentType: 'application/json',
+                beforeSend : function(xhr) {
+                    xhr.setRequestHeader(header, token);
+                },
+                data: JSON.stringify([{ testProcessCode: grid2.getValue(rowKey, 'testProcessCode'), status: '검사완료' }]), // 리스트 형태로 수정
+                success: function(response) {
+                },
+                error: function(error) {
+                    toastr.error('검사 완료 상태 저장 중 오류가 발생하였습니다.');
+                    console.error('검사 완료 상태 저장 오류:', error);
+                }
+            });
+        }
+
+        rowData = { rowKey, columnName, value, prevValue }; 
+      /*   $('#confirm-modal').modal('show');  */
+    });
+	
+     // 모달 그리드에서 행 클릭 시 메인 그리드에 데이터 설정
+    workProgressModalGrid.on('click', (ev) => {
+       let id = workProgressModalGrid.getValue(ev.rowKey, 'workInstructDetailCode'); // 클릭한 행의 작업지시코드 가져오기
+        selectedRowKey = ev.rowKey;
+       if (id != null) {
+       // 기존 작업이 있는 경우 경고 메시지 표시
+       let currentTask = grid.getData(); // 현재 메인 그리드의 데이터 가져오기
+       if (currentTask != null && currentTask.length > 0 && errorCheck < 1) {
+           errorCheck++;
+           return;
+         }
+
+       errorCheck = 0;
+
+       let selectedRowData = workProgressModalGrid.getRow(ev.rowKey);
+
+       if (selectedRowData != null) {
+       // 단건 정보에 대해 지시량 - 투입량 계산하여 검사가능량 설정
+       let availableQuantity = selectedRowData.instructQuantity - selectedRowData.inputQuantity;
+       selectedRowData.availableQuantity = availableQuantity; // 검사가능량 계산
+
+       // 단건정보
+       grid.resetData([selectedRowData]); 
+       grid.refreshLayout();
+
+       let status = selectedRowData.stauts; 
+       if (status == '검사완료') {
+           disableGrid2Editing(); // 상태가 검사완료인 경우 편집 비활성화
+     } else {
+           enableGrid2Editing(); // 상태가 검사완료가 아닌 경우 편집 활성화
+           }
+      }
+
+        // 모달 닫기
+         $('#search-workProgress-Modal').modal('hide'); // 모달 닫기
+            }
+        });
+
+        //모달창 검색 태그 값 캐싱
+        let radioVal = $('input:radio[name="flexRadioDefault"]');
+        let selectVal = $('#modal-select');
+        let workProgressInputVal = $('#modal-search-workProgress-input');
+
+        //작업지시 조회 모달창 데이터 조회하기
+        function searchWorkProgressData(data){
+            let result;
+            $.ajax({
+                url: '/test/workProgressListAjax',
+                method: 'POST',
+                beforeSend : function(xhr) {
+                    xhr.setRequestHeader(header, token);
+                },
+                data: data,
+                async: false,
+                success: function(data){
+                    data.length > 0 ? result = data : toastr.error('조회된 데이터가 없습니다.');
+                },
+                error: function(error){
+                    toastr.error('에러');
+                }
+            });
+            return result;
+        }
+    
+
+     // 완료 버튼 클릭시 Ajax
+       /*  const completeBtn = document.getElementById('main-top-complete-btn');
+        completeBtn.addEventListener('click', () => {
+           
+        }); */
+
+        $('.tui-grid-body-container').css("cursor","pointer")
+</script>
+</html>

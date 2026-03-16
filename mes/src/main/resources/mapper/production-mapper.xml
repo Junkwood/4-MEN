@@ -1,0 +1,530 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aio.mes.production.mapper.ProductionMapper">
+ 	<!-- 작업지시 목록 조회 및 검색 -->
+ 	<select id="searchWork" resultType="WorkInstructVO" parameterType="String">
+    SELECT DISTINCT a.work_Instruct_code
+	, a.work_name
+	, z.prod_name
+	, c.emp_name
+	, c.emp_code
+	, NVL(TO_CHAR(b.registration_date,'yyyy-MM-dd'),'지정된 계획 없음')registration_date
+	, CASE WHEN (SELECT COUNT(*) FROM work_progress f WHERE f.work_instruct_detail_code LIKE a.work_instruct_code||'%') = 0 THEN '요청'
+        WHEN (SELECT COUNT(*) FROM work_progress f WHERE f.work_instruct_detail_code LIKE a.work_instruct_code||'%' AND process_status IN ('PS2','PS1'))=0 THEN '처리완료'
+        ELSE '처리중' 
+        END as status
+	FROM work_instruct a LEFT OUTER JOIN manu_plan b ON a.manu_plan_code = b.manu_plan_code
+	                    LEFT OUTER JOIN emp c ON a.emp_code=c.emp_code
+	                    LEFT OUTER JOIN work_instruct_detail d ON a.work_instruct_code=d.work_instruct_code
+	                    LEFT OUTER JOIN prod_common e ON d.prod_code=e.prod_code
+	                    JOIN (select work_instruct_code,  case when count(work_instruct_code)=1
+								  then min(prod_name)
+								  else min(prod_name)||'외'||(count(work_instruct_code)-1)||'건'
+								   end as prod_name
+							from work_instruct_detail a JOIN prod_common b ON a.prod_code=b.prod_code
+							group by work_instruct_code) z ON a.work_instruct_code=z.work_instruct_code
+	<if test='search != "null"'>
+	AND ${search} like '%${keyword}%'
+	</if>
+	order by length(status),to_number(SUBSTR(a.work_instruct_code,INSTR(a.work_instruct_code, '-', 1, 2)+1)) desc
+	</select>
+	
+	<!-- 작업지시 상세 목록 조회 -->
+ 	<select id="getWorkDetailList" resultType="WorkInstructVO" parameterType="String">
+	SELECT a.work_name
+			, d.plan_name
+			, a.registration_date
+			, a.manu_start_date
+			, a.manu_end_date
+			, e.emp_name
+			, e.emp_code 
+	      	, c.prod_name
+	      	, b.priority
+	      	, b.instruct_quantity
+	      	, get_mes_sub_code_name(b.process_status) as process_status
+	      	, a.work_instruct_code
+	      	, b.prod_code
+	      	, c.unit
+	      	, b.work_instruct_detail_code
+	FROM work_instruct a LEFT OUTER JOIN work_instruct_detail b ON(a.work_instruct_code = b.work_instruct_code)
+                        LEFT OUTER JOIN prod_common c ON(b.prod_code = c.prod_code)
+                        LEFT OUTER JOIN manu_plan d ON(a.manu_plan_code = d.manu_plan_code)
+                        LEFT OUTER JOIN emp e ON(a.emp_code = e.emp_code)
+    WHERE a.work_instruct_code = #{workInstructCode}
+    ORDER BY 11, to_number(SUBSTR(a.work_instruct_code,INSTR(a.work_instruct_code, '-', 1, 2)+1)), d.registration_date, priority
+ 	</select>
+	<!-- 작업지시 상세 목록 조회(작업지시 목록페이지) -->
+ 	<select id="workInstructDetailList" resultType="WorkInstructVO" parameterType="String">
+	SELECT a.work_name
+			, d.plan_name
+			, f.order_name
+			, a.registration_date
+			, a.manu_start_date
+			, a.manu_end_date
+			, e.emp_name
+			, e.emp_code 
+	      	, c.prod_name
+	      	, b.priority
+	      	, b.instruct_quantity
+	      	, get_mes_sub_code_name(b.process_status) as process_status
+	      	, a.work_instruct_code
+	      	, b.prod_code
+	      	, c.unit
+	      	, b.work_instruct_detail_code
+	FROM work_instruct a LEFT OUTER JOIN work_instruct_detail b ON(a.work_instruct_code = b.work_instruct_code)
+                        LEFT OUTER JOIN prod_common c ON(b.prod_code = c.prod_code)
+                        LEFT OUTER JOIN manu_plan d ON(a.manu_plan_code = d.manu_plan_code)
+                        LEFT OUTER JOIN emp e ON(a.emp_code = e.emp_code)
+                        LEFT OUTER JOIN ORDERS f ON d.order_code = f.order_code
+    WHERE ${search1} like '%${keyword1}%' AND ${search2} like '%${keyword2}%'
+    	<choose>
+	    	<when test='(startDate1 =="null") and (startDate2 !="null") and (endDate1 == "null") and (endDate2 == "null")'>
+	       AND a.manu_end_date > TO_DATE('${startDate2} 00:00','yyyy-MM-dd HH24:MI')
+	    	</when>
+	    	<when test='(startDate1 !="null") and (startDate2 =="null") and (endDate1 == "null") and ( endDate2 == "null")'>
+	   		AND a.manu_start_date > TO_DATE('${startDate1} 00:00','yyyy-MM-dd HH24:MI')
+			</when>
+	    	<when test='(startDate1 !="null") and (startDate2 !="null") and (endDate1 == "null") and (endDate2 == "null")'>
+	   		AND a.manu_start_date > TO_DATE('${startDate1} 00:00','yyyy-MM-dd HH24:MI')
+	       AND a.manu_end_date > TO_DATE('${startDate2} 00:00','yyyy-MM-dd HH24:MI')
+			</when>
+	    	<when test='(startDate1 != "null") and (startDate2 != "null") and (endDate1 != "null") and (endDate2 =="null")'>
+	   		AND a.manu_start_date BETWEEN TO_DATE('${startDate1} 00:00','yyyy-MM-dd HH24:MI') AND TO_DATE('${endDate1} 23:59','yyyy-MM-dd HH24:MI')
+	       AND a.manu_end_date > TO_DATE('${startDate2} 00:00','yyyy-MM-dd HH24:MI') 
+			</when>
+	    	<when test='(startDate1 != "null") and (startDate2 != "null") and (endDate1 == "null") and (endDate2 !="null")'>
+	   		AND a.manu_start_date > TO_DATE('${startDate1} 00:00','yyyy-MM-dd HH24:MI')
+	       AND a.manu_end_date BETWEEN TO_DATE('${startDate2} 00:00','yyyy-MM-dd HH24:MI') AND TO_DATE('${endDate2} 23:59','yyyy-MM-dd HH24:MI')
+			</when>
+	    	<when test='(startDate1 != "null") and (startDate2 != "null") and (endDate1 != "null") and (endDate2 !="null")'>
+	   		AND a.manu_start_date BETWEEN TO_DATE('${startDate1} 00:00','yyyy-MM-dd HH24:MI') AND TO_DATE('${endDate1} 23:59','yyyy-MM-dd HH24:MI')
+	       AND a.manu_end_date BETWEEN TO_DATE('${startDate2} 00:00','yyyy-MM-dd HH24:MI') AND TO_DATE('${endDate2} 23:59','yyyy-MM-dd HH24:MI')
+			</when>
+    	</choose>
+
+    ORDER BY length(process_status), to_number(SUBSTR(a.work_instruct_code,INSTR(a.work_instruct_code, '-', 1, 2)+1)), d.registration_date, priority
+ 	</select>
+	<!-- 자재 입고 조회 -->
+ 	<select id="getMatStore" resultType="matSearchVO" parameterType="String">
+	SELECT ms.lot
+            , mc.mat_Name
+            , e.emp_Name
+            , e.rank
+            , e.dept_id
+            , ms.store_Date
+            , mi.inspect_Date
+            , ms.store_Quantity
+            , mc.unit
+            , ms.mat_Inspect_Code
+            , mi.note
+	FROM mat_store ms LEFT OUTER JOIN mat_common mc ON ms.mat_code = mc.mat_code
+                    LEFT OUTER JOIN emp e ON ms.emp_code=e.emp_code
+                    LEFT OUTER JOIN mat_inspect mi ON ms.mat_inspect_code = mi.mat_inspect_code
+                    
+    WHERE ${search1} like '%${keyword1}%' AND ${search2} like '%${keyword2}%'
+           	<choose>
+	    	<when test='(startDate1 =="null") and (startDate2 !="null") and (endDate1 == "null") and (endDate2 == "null")'>
+	       AND ms.store_Date > TO_DATE('${startDate2} 00:00','yyyy-MM-dd HH24:MI')
+	    	</when>
+	    	<when test='(startDate1 !="null") and (startDate2 =="null") and (endDate1 == "null") and ( endDate2 == "null")'>
+	   		AND ms.store_Date > TO_DATE('${startDate1} 00:00','yyyy-MM-dd HH24:MI')
+			</when>
+	    	<when test='(startDate1 !="null") and (startDate2 !="null") and (endDate1 == "null") and (endDate2 == "null")'>
+	   		AND ms.store_Date > TO_DATE('${startDate1} 00:00','yyyy-MM-dd HH24:MI')
+	       AND mi.inspect_Date > TO_DATE('${startDate2} 00:00','yyyy-MM-dd HH24:MI')
+			</when>
+	    	<when test='(startDate1 != "null") and (startDate2 != "null") and (endDate1 != "null") and (endDate2 =="null")'>
+	   		AND ms.store_Date BETWEEN TO_DATE('${startDate1} 00:00','yyyy-MM-dd HH24:MI') AND TO_DATE('${endDate1} 23:59','yyyy-MM-dd HH24:MI')
+	       AND mi.inspect_Date > TO_DATE('${startDate2} 00:00','yyyy-MM-dd HH24:MI') 
+			</when>
+	    	<when test='(startDate1 != "null") and (startDate2 != "null") and (endDate1 == "null") and (endDate2 !="null")'>
+	   		AND ms.store_Date > TO_DATE('${startDate1} 00:00','yyyy-MM-dd HH24:MI')
+	       AND mi.inspect_Date BETWEEN TO_DATE('${startDate2} 00:00','yyyy-MM-dd HH24:MI') AND TO_DATE('${endDate2} 23:59','yyyy-MM-dd HH24:MI')
+			</when>
+	    	<when test='(startDate1 != "null") and (startDate2 != "null") and (endDate1 != "null") and (endDate2 !="null")'>
+	   		AND ms.store_Date BETWEEN TO_DATE('${startDate1} 00:00','yyyy-MM-dd HH24:MI') AND TO_DATE('${endDate1} 23:59','yyyy-MM-dd HH24:MI')
+	       AND mi.inspect_Date BETWEEN TO_DATE('${startDate2} 00:00','yyyy-MM-dd HH24:MI') AND TO_DATE('${endDate2} 23:59','yyyy-MM-dd HH24:MI')
+			</when>
+    	</choose>
+    ORDER BY to_number(SUBSTR(ms.lot,INSTR(ms.lot, '-', 1, 2)+1)) desc
+ 	</select>
+	<!-- 자재 홀드 조회 -->
+ 	<select id="getMatHold" resultType="matSearchVO" parameterType="String">
+ 	SELECT
+		    work_name,
+		    prod_name,
+		    emp_name,
+		    rank,
+		    dept_id,
+		    mh.lot,
+		    mc.mat_name,
+		    hold_quantity,
+		    mc.unit,
+		    get_mes_sub_code_name(progress) as progress
+	FROM
+		    mat_hold mh JOIN work_instruct_detail wid ON mh.work_instruct_detail_code=wid.work_instruct_detail_code
+		                JOIN work_instruct wi ON wi.work_instruct_code=wid.work_instruct_code
+		                JOIN emp e ON e.emp_code = wi.emp_code
+		                JOIN mat_store ms ON mh.lot=ms.lot
+		                JOIN mat_common mc ON mc.mat_code=ms.mat_code
+		                JOIN prod_common pc ON pc.prod_code = wid.prod_code
+	WHERE ${search1} like '%${keyword1}%' AND ${search2} like '%${keyword2}%'
+	ORDER BY 10, to_number(SUBSTR(mh.lot,INSTR(mh.lot, '-', 1, 2)+1)) desc
+ 	</select>
+	<!-- 자재 출고 조회 -->
+ 	<select id="getMatRelease" resultType="matSearchVO" parameterType="String">
+SELECT
+    ms.lot mat_lot,
+    mc.mat_name,
+    wi.work_name,
+    pc.prod_name,
+    mr.mat_release_code,
+    mr.release_date,
+    mr.release_quantity,
+    mc.unit,
+    ps.lot prod_lot
+FROM
+    mat_release mr JOIN mat_hold mh ON mh.mat_hold_code=mr.mat_hold_code
+                    JOIN mat_store ms ON mh.lot=ms.lot
+                    JOIN mat_common mc ON ms.mat_code=mc.mat_code
+                    JOIN work_instruct_detail wid ON wid.work_instruct_detail_code = mr.work_instruct_detail_code
+                    JOIN work_instruct wi ON wid.work_instruct_code = wi.work_instruct_code
+                    JOIN prod_common pc ON pc.prod_code = wid.prod_code
+                    JOIN prod_store ps ON ps.work_instruct_detail_code = wid.work_instruct_detail_code
+
+                    
+    WHERE ${search1} like '%${keyword1}%'
+           	<choose>
+	    	<when test='(startDate1 !="null") and (endDate1 == "null")'>
+	       AND mr.release_Date > TO_DATE('${startDate2} 00:00','yyyy-MM-dd HH24:MI')
+	    	</when>
+	    	<when test='(startDate1 != "null") and (endDate1 != "null")'>
+	   		AND mr.release_Date BETWEEN TO_DATE('${startDate1} 00:00','yyyy-MM-dd HH24:MI') AND TO_DATE('${endDate1} 23:59','yyyy-MM-dd HH24:MI')
+			</when>
+    	</choose>
+	ORDER BY to_number(SUBSTR(mr.mat_release_code,INSTR(mr.mat_release_code, '-', 1, 2)+1)) desc
+ 	</select>
+	<!-- 자재 재고 및 안전재고 조회 -->
+ 	<select id="getMatStock" resultType="matSearchVO" parameterType="String">
+	SELECT mat_name, safetystock, SUM(NVL(ms.store_quantity,0))-SUM(NVL(mr.release_quantity,0)) as stock,unit
+	FROM mat_common mc left outer JOIN mat_store ms ON ms.mat_code=mc.mat_code
+	                   left outer JOIN mat_hold mh ON mh.lot=ms.lot
+	                   left outer  JOIN mat_release mr ON mr.mat_hold_code=mh.mat_hold_code
+	GROUP BY mat_name,safetystock,unit
+	ORDER BY mat_name
+ 	</select>
+	<!-- 필요자재 및 요구량 조회 -->
+ 	<select id="getMatList" resultType="WorkInstructVO" parameterType="String">
+    select a.mat_code, b.mat_name, a.use_amount, NVL(c.hold_quantity,0) hold_quantity,b.unit
+    from bom a JOIN mat_common b ON a.mat_code=b.mat_code
+                LEFT OUTER JOIN (SELECT mat_code, sum(hold_quantity) as hold_quantity
+                      FROM mat_hold d JOIN mat_store e ON d.lot = e.lot
+                      WHERE work_instruct_detail_code = #{workInstructDetailCode}
+                      GROUP BY mat_code) c ON a.mat_code = c.mat_code
+    where prod_code=#{prodCode}
+    ORDER BY a.mat_code
+ 	</select>
+ 	
+ 	<!-- 로트별 재고량 조회 -->
+ 	<select id="getLotList" resultType="WorkInstructVO" parameterType="String">
+    SELECT a.lot, a.mat_code, c.mat_name, a.store_quantity-NVL(sum(b.hold_quantity),0) stock
+    FROM mat_store a LEFT OUTER JOIN  mat_hold b ON a.lot = b.lot
+                    JOIN mat_common c ON a.mat_code=c.mat_code
+    WHERE a.mat_code=#{matCode} 
+    GROUP BY a.lot, a.mat_code, c.mat_name, a.store_quantity
+    HAVING a.store_quantity-NVL(sum(b.hold_quantity),0)>0
+	ORDER BY to_number(SUBSTR(a.lot,INSTR(a.lot, '-', 1, 2)+1))
+ 	</select>
+ 	
+ 	<!-- 제품 목록 조회 -->
+ 	<select id="getProdList" resultType="WorkInstructVO" parameterType="String">
+	SELECT prod_name, prod_code, unit
+	FROM prod_common
+	ORDER BY to_number(SUBSTR(prod_code,INSTR(prod_code, '-', 1, 1)+1))
+ 	</select>
+ 	
+		  <!-- 지시 및 지시상세등록 -->
+   <select id="insertWorkDetailList" parameterType="java.util.List" statementType="CALLABLE">
+	{ call insert_work_list(#{wList, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=WORK_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.WorkInstructDetailArrayTypeHandler},
+	#{p_work_instruct_code, jdbcType=VARCHAR, mode=OUT}) }
+  </select>
+  
+		  <!-- 지시 및 지시상세삭제 -->
+    <select id="deleteWorkDetailList" parameterType="java.util.List" statementType="CALLABLE">
+	{ call delete_work_list(#{wList, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=WORK_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.WorkInstructDetailArrayTypeHandler},
+							#{p_output_msg, jdbcType=VARCHAR, mode=OUT}) }
+  </select>
+  
+		  <!-- 지시 및 지시상세수정 -->
+    <select id="updateWorkDetailList" parameterType="java.util.List" statementType="CALLABLE">
+	{ call update_work_list(#{wList, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=WORK_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.WorkInstructDetailArrayTypeHandler}) }
+  </select>
+  
+		  <!-- 지시 및 지시상세수정 -->
+    <select id="insertMatHold" parameterType="java.util.List" statementType="CALLABLE">
+	{ call insert_mat_hold(#{wList, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=WORK_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.WorkInstructDetailArrayTypeHandler}) }
+  </select>
+  
+  <!-- 공정 진행 -->
+  <select id="searchPerfData" parameterType="String" resultType="perfDataVO">
+	SELECT prog.work_progress_code,
+	       prog.proc_code,
+	       get_proc_name(prog.proc_code) AS "proc_name",
+	       prog.work_instruct_detail_code,
+	       wid.prod_code,
+	       find_prod_name(wid.prod_code) AS "prod_name",
+	       pe.perf_code,
+	       pe.input_quantity,
+	       pe.error_quantity,
+	       pe.prod_quantity,
+	       pe.work_start_date,
+	       pe.work_end_date,
+	       pe.fac_code,
+	       get_fac_name(pe.fac_code) AS "fac_name",
+	       pe.worker AS "emp_code",
+	       find_emp_name(pe.worker) AS "emp_name"
+	FROM   work_progress prog JOIN work_instruct_detail wid
+	                            ON (prog.work_instruct_detail_code = wid.work_instruct_detail_code)
+	                          JOIN perf pe
+	                            ON (prog.work_progress_code = pe.work_progress_code)
+	WHERE  pe.perf_code = #{perfCode}
+  </select>
+  
+  	<!-- 작업진행 검색 및 조회  -->
+  	<select id="searchWorkProgress" resultType="WorkProgressVO" parameterType="String">
+		SELECT c.work_name
+		        , e.proc_name
+		        , a.proc_num
+		        , d.prod_name
+		        , TO_CHAR(c.registration_date,'yyyy-MM-dd') as registration_date
+		        , c.manu_end_date
+		        , a.instruct_quantity
+		        , a.input_quantity
+		        , a.error_quantity
+		        , a.prod_quantity
+		        , a.progress
+		        , a.work_progress_code
+		        , a.proc_code
+		        , d.unit
+		FROM work_progress a JOIN work_instruct_detail b ON a.work_instruct_detail_code = b.work_instruct_detail_code
+		                    JOIN work_instruct c ON  b.work_instruct_code = c.work_instruct_code
+		                    JOIN prod_common d ON b.prod_code = d.prod_code
+		                    JOIN proc e ON a.proc_code = e.proc_code
+		WHERE a.instruct_quantity-a.input_quantity != 0
+		AND d.prod_code LIKE '%${prodCode}%' AND e.proc_code LIKE '%${procCode}%' AND a.work_progress_code LIKE '%${workProgressCode}' AND e.proc_class_code != 'PC1'
+		ORDER BY c.registration_date desc,to_number(SUBSTR(c.work_instruct_code,INSTR(c.work_instruct_code, '-', 1, 2)+1)) desc,a.proc_num
+ 	</select>
+ 	
+ 	<!-- 공정 종류들 조회  -->
+ 	<select id="getProcList" resultType="WorkProgressVO" parameterType="String">
+		SELECT proc_name, proc_code
+		FROM proc
+		WHERE proc_class_code !='PC1'
+		ORDER BY proc_name
+ 	</select>
+ 	
+ 	<!-- 설비종류들 조회  -->
+ 	<select id="getFacList" resultType="WorkProgressVO" parameterType="String">
+		SELECT a.fac_code
+		        , a.fac_name
+		        , get_mes_sub_code_name(a.fac_status) as fac_status
+		FROM fac a JOIN proc b ON a.fac_class_code = b.fac_class_code
+					JOIN work_progress c ON b.proc_code=c.proc_code
+		WHERE c.work_progress_code = #{workProgressCode}
+		AND a.fac_status = 'FS1'
+ 	</select>
+ 	
+ 	<!-- 사원목록 조회 -->
+ 	 <select id="getEmpList" resultType="WorkProgressVO" parameterType="String">
+		SELECT emp_code, emp_name, dept_id
+		FROM emp
+ 	</select>
+ 	
+ 	<!-- 사원기준 진행중인 실적 유무 확인 -->
+ 	 <select id="getPerfCnt" resultType="Integer" parameterType="String">
+		SELECT COUNT(*) 
+		FROM perf 
+		WHERE work_end_date is null
+		AND worker = #{empCode}
+ 	</select>
+ 	
+ 	<!-- 진행중인 실적은 하나만 있을거라 해당 실적 조회 -->
+ 	 <select id="getSinglePerf" resultType="WorkProgressVO" parameterType="String">
+		SELECT TO_CHAR(a.work_start_date,'yyyy-MM-dd') as work_start_date, a.input_quantity, a.error_quantity, a.prod_quantity, fac_name, a.perf_code
+		FROM perf a JOIN fac b ON a.fac_code = b.fac_code
+		WHERE a.work_end_date IS NULL 
+		AND worker = #{empCode}
+ 	</select>
+
+ 	<select id="savePerfData" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call save_perf(#{p_input_perf_code, jdbcType=VARCHAR, mode=IN},
+ 	                 #{p_input_prod_quantity, jdbcType=VARCHAR, mode=IN},
+ 	                 #{p_input_error_quantity, jdbcType=VARCHAR, mode=IN},
+ 	                 #{p_output_msg, jdbcType=VARCHAR, mode=OUT}) }
+ 	</select>
+ 	
+ 	<select id="endPerfData" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call end_perf(#{p_input_perf_code, jdbcType=VARCHAR, mode=IN}, 
+ 	                #{p_output_msg, jdbcType=VARCHAR, mode=OUT})}
+ 	</select>
+ 	
+ 	<select id="getEmpName" parameterType="String" resultType="String">
+ 	SELECT find_emp_name(#{empCode})
+    FROM   DUAL
+ 	</select>
+ 	
+ 	<select id="getFacName" parameterType="String" resultType="String">
+ 	SELECT get_fac_name(#{facCode})
+	FROM   DUAL
+ 	</select>
+ 	
+ 	<select id="getProdName" parameterType="String" resultType="String">
+ 	SELECT find_prod_name(prod_code)
+	FROM   work_instruct_detail
+	WHERE  work_instruct_detail_code = (SELECT work_instruct_detail_code
+                                    	FROM   work_progress
+                                    	WHERE  work_progress_code = #{workProgressCode})
+ 	</select>
+ 	
+ 	<select id="getProcName" parameterType="String" resultType="String">
+ 	SELECT get_proc_name(proc_code)
+	FROM   work_progress
+	WHERE  work_progress_code = #{workProgressCode}
+ 	</select>
+ 	
+ 	<select id="insertNewPerfData" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call insert_new_perf_data( #{p_emp_code, jdbcType=VARCHAR, mode=IN},
+ 	                             #{p_fac_code, jdbcType=VARCHAR, mode=IN},
+ 	                             #{p_work_progress_code, jdbcType=VARCHAR, mode=IN},
+ 	                             #{p_input_quantity, jdbcType=INTEGER, mode=IN},
+ 	                             #{p_output_perf_code, jdbcType=VARCHAR, mode=OUT},
+ 	                             #{p_output_msg, jdbcType=VARCHAR, mode=OUT})}
+  </select>
+  
+ 	 <!-- 생산계획조회 -->
+ 	 <select id="getManuPlan" resultType="ManufactureVO" parameterType="String">
+ 	 
+ SELECT 
+    a.plan_name,
+    b.order_name,
+    c.emp_name,
+    a.registration_date,
+    a.start_date,
+    a.end_date,
+    a.note,
+    a.emp_code,
+    a.manu_plan_code,
+    CASE 
+        WHEN NVL(w.ps2_cnt,0)>0 THEN '처리중'
+        WHEN NVL(w.ps1_cnt,1)>0 AND NVL(w.ps3_cnt,0)=0 THEN '요청'
+        ELSE '처리완료'
+    END AS process_status
+FROM 
+    manu_plan a LEFT OUTER JOIN orders b ON a.order_code = b.order_code
+				JOIN emp c ON a.emp_code = c.emp_code
+				LEFT JOIN (SELECT e.manu_plan_code,SUM(CASE WHEN d.process_status = 'PS3' THEN 1 ELSE 0 END) AS ps3_cnt ,SUM(CASE WHEN d.process_status = 'PS2' THEN 1 ELSE 0 END) AS ps2_cnt, SUM(CASE WHEN d.process_status = 'PS1' THEN 1 ELSE 0 END) AS ps1_cnt
+   	 						FROM work_instruct e LEFT JOIN work_instruct_detail d ON d.work_instruct_code = e.work_instruct_code 
+   	 						GROUP BY e.manu_plan_code) w ON a.manu_plan_code = w.manu_plan_code
+WHERE ${search} LIKE '%${keyword}%'
+ORDER BY  length(process_status),  a.start_date DESC
+
+ 	</select>
+  
+ 	 <!-- 생산계획상세조회 -->
+ 	 <select id="getManuDetail" resultType="ManufactureVO" parameterType="String">
+		select manu_plan_detail_code
+		        , b.prod_name
+		        , a.prod_code
+		        , priority
+		        , plan_quantity
+		        , get_mes_sub_code_name(PROCESS_STATUS) as process_status
+		        , b.unit
+		FROM manu_plan_detail a JOIN prod_common b ON a.prod_code = b.prod_code
+		WHERE manu_plan_code = #{manuPlanCode}
+ 	</select>
+ 	<!-- 생산계획 및 상세등록 -->
+   <select id="insertPlanDetailList" parameterType="java.util.List" statementType="CALLABLE">
+	{ call insert_plan_list(#{mList, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=PLAN_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.ManuPlanDetailArrayTypeHandler}) }
+  </select>
+  <!-- 생산계획 상세 삭제 -->
+  <delete id="deleteManuPlanDetail" parameterType="String">
+  	DELETE FROM manu_plan_detail
+  	WHERE manu_plan_detail_code = #{manuPlanDetailCode}
+  </delete>
+  <!-- 생산계획 삭제 -->
+  <select id="deleteManuPlan" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+	{ call delete_manu_plan(#{p_manu_plan_code, jdbcType=VARCHAR, mode=IN},
+							#{p_output_msg, jdbcType=VARCHAR, mode=OUT}) }
+  </select>
+   <!-- 생산계획 수정 -->
+   	<select id="updateManuPlan" parameterType="map" statementType="CALLABLE" resultType="hashmap">
+ 	{ call update_manu_plan(#{pList, javaType=java.util.List, jdbcType=ARRAY, jdbcTypeName=PLAN_LIST, mode=IN, typeHandler=com.aio.mes.mybatis.config.ManuPlanDetailArrayTypeHandler}, 
+ 	                #{p_output_msg, jdbcType=VARCHAR, mode=OUT})}
+ 	</select>
+ 	
+ 	<select id="searchWorkProgressList" parameterType="SearchWorkProgressDTO" resultType="SearchWorkProgressVO">
+ 	SELECT   NVL(get_plan_name(wi.manu_plan_code), '계획없음') AS plan_name,
+	         wi.work_name,
+	         find_emp_name(wi.emp_code) AS emp_name,
+	         wi.registration_date,
+	         wi.manu_start_date,
+	         wi.manu_end_date,
+	         find_prod_name(wid.prod_code) AS prod_name,
+	         wid.instruct_quantity,
+	         get_mes_sub_code_name(wid.process_status) AS process_status,
+	         wp.proc_num,
+	         get_proc_name(wp.proc_code) AS proc_name,
+	         wp.instruct_quantity AS instruct_quantity_wp,
+	         wp.input_quantity,
+	         wp.error_quantity,
+	         wp.prod_quantity,
+	         wp.progress
+     FROM     work_progress wp JOIN work_instruct_detail wid
+                                 ON(wp.work_instruct_detail_code = wid.work_instruct_detail_code)
+                               JOIN work_instruct wi
+                                 ON(wid.work_instruct_code = wi.work_instruct_code)
+	 <choose>
+	 	<when test="select1Val == null or select1Val == 'ALL'">
+	 		WHERE wid.process_status IN ('PS1', 'PS2', 'PS3')
+	 	</when>
+	 	<otherwise>
+	 		WHERE wid.process_status = #{select1Val}
+	 	</otherwise>
+	 </choose>
+	 
+	 <if test="selectInputVal != null and selectInputVal != ''">
+	 	<choose>
+	 		<when test="select2Val == 'planName'">
+	 			AND get_plan_name(wi.manu_plan_code) LIKE '%' || #{selectInputVal} || '%'
+	 		</when>
+	 		<when test="select2Val == 'workName'">
+	 			AND wi.work_name LIKE '%' || #{selectInputVal} || '%'
+	 		</when>
+	 		<when test="select2Val == 'prodName'">
+	 			AND find_prod_name(wid.prod_code) LIKE '%' || #{selectInputVal} || '%'
+	 		</when>
+	 		<when test="select2Val == 'procName'">
+	 			AND get_proc_name(wp.proc_code) LIKE '%' || #{selectInputVal} || '%'
+	 		</when>
+	 		<otherwise>
+	 		</otherwise>
+	 	</choose>
+	 </if>
+	 
+	 <if test="registEndDate != null and registEndDate != ''">
+	 	AND wi.registration_date BETWEEN TO_DATE(#{registStartDate}, 'YYYY-MM-DD')
+	 								AND TO_DATE(#{registEndDate}, 'YYYY-MM-DD')
+	 </if>
+	 <if test="manuBeginEndDate != null and manuBeginEndDate != ''">
+	 	AND wi.registration_date BETWEEN TO_DATE(#{manuBeginStartDate}, 'YYYY-MM-DD')
+	 								AND TO_DATE(#{manuBeginEndDate}, 'YYYY-MM-DD')
+	 </if>
+	 <if test="manuCloseEndDate != null and manuCloseEndDate != ''">
+	 	AND wi.registration_date BETWEEN TO_DATE(#{manuCloseStartDate}, 'YYYY-MM-DD')
+	 								AND TO_DATE(#{manuCloseEndDate}, 'YYYY-MM-DD')
+	 </if>
+     ORDER BY wi.registration_date, wp.work_instruct_detail_code, proc_num
+ 	</select>
+</mapper>

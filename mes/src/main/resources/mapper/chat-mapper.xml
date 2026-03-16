@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aio.mes.webSocket.mapper.ChatMapper">
+    
+    <insert id="insertMessage">
+        <selectKey keyProperty="messageId" resultType="String" order="BEFORE">
+            SELECT 'MESSAGE-' || NVL(MAX(TO_NUMBER(SUBSTR(message_id, 9))) + 1, 1)
+            FROM Messages
+            WHERE message_id LIKE 'MESSAGE-%'
+        </selectKey>
+        INSERT INTO Messages (message_id, room_id, emp_code, message, created_at) 
+        VALUES (#{messageId}, #{roomId}, #{empCode}, #{message}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <select id="selectMessagesByRoomId" resultType="com.aio.mes.webSocket.Message">
+        SELECT
+            m.message_id AS messageId,
+            m.room_id    AS roomId,
+            m.emp_code   AS empCode,
+            e.emp_name   AS empName,
+            m.message,
+            m.created_at AS createdAt
+        FROM
+            messages m JOIN emp e 
+            ON m.emp_code = e.emp_code
+        WHERE m.room_id = #{roomId} 
+        ORDER BY m.created_at ASC
+    </select>
+
+    <select id="getChatRooms" resultType="map">
+        SELECT room_id AS roomId, room_name AS roomName
+        FROM Rooms
+    </select>
+
+    <select id="getUser" parameterType="string" resultType="map">
+        SELECT emp_code, emp_name
+        FROM emp
+        WHERE emp_code = #{empId}
+    </select>
+
+    <select id="getEmpName" parameterType="string" resultType="string">
+        SELECT emp_name
+        FROM emp
+        WHERE emp_code = #{empCode}
+    </select>
+    
+    <delete id="deleteMessagesByRoomId">
+        DELETE FROM messages WHERE room_id = #{roomId}
+    </delete>
+</mapper>

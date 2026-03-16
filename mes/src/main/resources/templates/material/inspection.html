@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/default_layout}"
+      layout:fragment="Content">      
+<link th:href="@{/css/matinspection.css}" rel="stylesheet">
+	<body>
+		<div class="container">
+			<p class="h1">자재 검수</p>
+	      	<nav class="order-nav">
+				<button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#search-MatOrder-Modal">발주 조회</button>
+				<button type="button" class="btn btn-outline-dark" data-bs-toggle="modal" data-bs-target="#search-MatInspection-Modal">검수 내역 조회</button>
+		      	<input type='button' class="btn btn-outline-success" id="main-top-save-btn" value="저장">
+		      	<input type='button' class="btn btn-outline-danger" id="main-top-delete-btn" value="삭제">
+		      	<input type='button' class="btn btn-outline-warning" id="main-top-init-btn" value="초기화">
+	      	</nav>
+	      	
+	      	<div id="grid-main-top"></div>
+	      	
+	      	<br>
+	      	
+	      	<p class="h1">일일 검수 내역</p>
+	      	
+	      	<div id="grid-main-bottom"></div>   		
+      </div>
+
+   		<!-- 발주 찾기 모달 -->
+		<div class="modal fade" id="search-MatOrder-Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		  <div class="modal-dialog modal-dialog-centered modal-lg">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		      	<div class="modal-header-title">
+			        <h1 class="modal-title fs-4 order-search-title" id="exampleModalLabel">발주 간단 조회</h1>
+		      	</div>
+		        	<div class="modal-header-search-nav-radio">
+			        	<div class="form-check form-check-inline">
+						  <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" value="orderName" checked>
+						  <label class="form-check-label" for="flexRadioDefault1">
+						    발주명
+						  </label>
+						</div>
+						<div class="form-check form-check-inline">
+						  <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2" value="empName">
+						  <label class="form-check-label" for="flexRadioDefault2">
+						    요청자명
+						  </label>
+						</div>		        	
+		        	</div>		        
+		        <div class="modal-header-search-nav">
+				    <input class="form-control me-2 order-search" id="modal-search-matOrder-input" type="search" placeholder="키워드 검색" aria-label="Search">
+				    <button class="btn btn-outline-success" id="modal-matOrder-search-btn" type="submit">검색</button>
+		        </div>
+				<div class="modal-header-close">
+			        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+		      </div>
+		      <div class="modal-body">
+		      	<div id="grid-modal-matOrder"></div>
+		      </div>
+		      <div class="modal-footer">
+		      </div>
+		    </div>
+		  </div>
+		</div>
+		
+		<!-- 검수내역 찾기 모달 -->
+		<div class="modal fade" id="search-MatInspection-Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		  <div class="modal-dialog modal-dialog-centered modal-lg">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		      	<div class="modal-header-title">
+			        <h1 class="modal-title fs-4 order-search-title" id="exampleModalLabel">자재 검수 내역 조회</h1>
+		      	</div>
+						        
+		        <div class="modal-header-search-nav">
+				    <input class="form-control me-2 order-search modal-header-search-nav-input" id="modal-search-matInspection-input" type="search" placeholder="발주명 검색" aria-label="Search">
+				    <button class="btn btn-outline-success modal-header-search-nav-btn" id="modal-matInspection-search-btn" type="submit">검색</button>
+		        </div>
+				<div class="modal-header-close">
+			        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+		      </div>
+		      <div class="modal-body">
+		      	<div id="grid-modal-matInspection"></div>
+		      </div>
+		      <div class="modal-footer">
+		      </div>
+		    </div>
+		  </div>
+		</div>
+	</body>
+	
+	<script th:inline="javascript">
+	//전역 변수 선언
+	let warningCheck = 0;
+	let sessionEmpCode =[[${#authentication.principal.empCode}]];
+	let sessionEmpName =[[${#authentication.principal.empName}]];
+	const token = $("meta[name='_csrf']").attr("content")
+	const header = $("meta[name='_csrf_header']").attr("content");
+	
+	//메인 상단 그리드 생성
+	const gridMainTop = new tui.Grid({
+		el: document.getElementById('grid-main-top'),
+		scrollX: false,
+		scrollY: false,
+		pageOptions: {
+            perPage: 5,
+            useClient: true,
+        },
+		columns: [
+			{
+				header: '발주명',
+				name: 'orderName',
+				align: 'left'
+			},
+			{
+				header: '분류',
+				name: 'matClass',
+				align: 'center'
+			},
+			{
+				header: '자재명',
+				name: 'matName',
+				align: 'left'
+			},
+			{
+				header: '업체명',
+				name: 'clientName',
+				align: 'left'
+			},
+			{
+				header: '발주수량',
+				name: 'quantity',
+				align: 'right'
+			},
+			{
+				header: '기검수량',
+				name: 'prevQuantity',
+				align: 'right'
+			},
+			{
+				header: '검수량:',
+				name: 'inspectQuantity',
+				editor: 'text',
+				validation: {dataType: 'number'},
+				align: 'right'
+			},
+			{
+				header: '불량량:',
+				name: 'errorQuantity',
+				editor: 'text',
+				validation: {dataType: 'number' },
+				align: 'right'
+			},
+			{
+				header: '비고:',
+				name: 'note',
+				editor: 'text',
+				align: 'left'
+			},
+			{
+				header: '검수자',
+				name: 'empName',
+				align: 'center'
+			},
+			{
+				header: '검수일자',
+				name: 'inspectDate',
+				align: 'center'
+			}
+		]
+	});
+	//메인 하단 그리드 생성
+	const gridMainBottom = new tui.Grid({
+		el: document.getElementById('grid-main-bottom'),
+		scrollX: false,
+		scrollY: false,
+		pageOptions: {
+            perPage: 5,
+            useClient: true,
+        },
+		columns: [
+			{
+				header: '검수처리코드',
+				name: 'matInspectCode',
+				sortable: true,
+				filter: 'text',
+				rowSpan: true,
+				align: 'center'
+			},
+			{
+				header: '발주명',
+				name: 'orderName',
+				align: 'left'
+			},
+			{
+				header: '자재명',
+				name: 'matName',
+				align: 'left'
+			},
+			{
+				header: '업체명',
+				name: 'clientName',
+				align: 'left'
+			},
+			{
+				header: '검수량',
+				name: 'inspectQuantity',
+				align: 'right'
+			},
+			{
+				header: '불량량',
+				name: 'errorQuantity',
+				align: 'right'
+			},
+			{
+				header: '비고',
+				name: 'note',
+				align: 'left'
+			},
+			{
+				header: '검수자',
+				name: 'empName',
+				align: 'center'
+			},
+			{
+				header: '검수일자',
+				name: 'inspectDate',
+				align: 'center'
+			}
+		]
+	});
+	
+	//발주 조회 모달 그리드 생성
+	const matOrderModalGrid = new tui.Grid({
+			el: document.getElementById('grid-modal-matOrder'),
+			scrollX: false,
+			scrollY: false,
+			pageOptions: {
+	            perPage: 5,
+	            useClient: true,
+	        },
+			columns: [
+				{
+					header: '발주코드',
+					name: 'matOrderCode',
+					sortable: true,
+					filter: 'text',
+					rowSpan: true,
+					align: 'center'
+				},
+				{
+					header: '발주명',
+					name: 'orderName',
+					align: 'left'
+				},
+				{
+					header: '발주일자',
+					name: 'orderDate',
+					align: 'center'
+				},
+				{
+					header: '요청자명',
+					name: 'empName',
+					align: 'center'
+				},
+				{
+					header: '요청상태',
+					name: 'orderStatus',
+					align: 'center',
+					renderer:{
+		            	  styles:{
+		            		  backgroundColor:(props) => props.value == '요청'?  'rgba(252, 240, 3)' 
+		            		  : props.value == '처리중'?  'rgba(252, 3, 45)' 	  
+		            		  : props.value == '처리완료'?  'rgba(3, 252, 65)':'',
+		            		fontSize :'15px',
+		            	    fontFamily: 'Malgun Gothic',
+		            	    fontWeight: 'bold'
+		            	  }
+		            }
+				}
+			]
+	});
+	//검수 내역 조회 모달 그리드 생성
+	const matInspectModalGrid = new tui.Grid({
+			el: document.getElementById('grid-modal-matInspection'),
+			scrollX: false,
+			scrollY: false,
+			pageOptions: {
+	            perPage: 5,
+	            useClient: true,
+	        },
+			columns: [
+				{
+					header: '검수처리코드',
+					name: 'matInspectCode',
+					sortable: true,
+					filter: 'text',
+					rowSpan: true,
+					algin: 'center'
+				},
+				{
+					header: '발주명',
+					name: 'orderName',
+					align: 'left'
+				},
+				{
+					header: '자재명',
+					name: 'matName',
+					align: 'left'
+				},
+				{
+					header: '업체명',
+					name: 'clientName',
+					align: 'left'
+				},
+				{
+					header: '검수량',
+					name: 'inspectQuantity',
+					align: 'right'
+				},
+				{
+					header: '불량량',
+					name: 'errorQuantity',
+					align: 'right'
+				},
+				{
+					header: '비고',
+					name: 'note',
+					align: 'left'
+				},
+				{
+					header: '검수자',
+					name: 'empName',
+					align: 'center'
+				},
+				{
+					header: '검수일자',
+					name: 'inspectDate',
+					align: 'center'
+				}
+			]
+	});
+	
+	//그리드 생성 후, 초기화 함수실행
+	initializeData();
+	
+	//tui 그리드 커서 포인터 적용
+	$('.tui-grid-body-container').css("cursor","pointer");
+	
+	//발주 조회 모달 그리드 이벤트 지정
+	matOrderModalGrid.on('click', (ev) => {
+		let id = matOrderModalGrid.getValue(ev.rowKey, 'matOrderCode');
+		
+		//메인 그리드에 조회한 발주 정보 디스플레이(NULL체크 필요)
+		if (id != null){
+			//기존에 작업하던 건이 있다면 경고창을 통해 변경 작업 한번 막아주기
+			let currentTask = gridMainTop.getData();
+			if(currentTask != null && currentTask.length > 0 && warningCheck < 1){
+				warningCheck++;
+				toastr.warning('저장되지 않은 작업 사항이 있습니다. 계속하시려면 한번 더 눌러주세요.');
+				return;
+			}
+			
+			warningCheck = 0;
+			
+			let data = searchInspectableMatOrderDetailsData(id);
+			
+			gridMainTop.resetData(data != null ? data : []);
+			
+			//모달 닫기
+			$('#search-MatOrder-Modal').modal('hide');
+		}
+	});
+	//검수 내역 조회 모달 그리드 이벤트 지정
+	matInspectModalGrid.on('click', (ev) => {
+		let id = matInspectModalGrid.getValue(ev.rowKey, 'matInspectCode');
+		
+		//메인 그리드에 조회한 검수 내역 정보 디스플레이(NULL 체크 필요)
+		if (id != null){
+			//기존에 작업하던 건이 있다면 경고창을 통해 변경 작업 한번 막아주기
+			let currentTask = gridMainTop.getData();
+			if(currentTask != null && currentTask.length > 0 && warningCheck < 1){
+				warningCheck++;
+				toastr.warning('저장되지 않은 작업 사항이 있습니다. 계속하시려면 한번 더 눌러주세요.');
+				return;
+			}
+			
+			warningCheck = 0;
+			
+			let data = [searchInspectedMatOrderData(id)];
+			gridMainTop.resetData(data);
+			
+			//모달 닫기
+			$('#search-MatInspection-Modal').modal('hide');
+		}
+	});
+	//초기화 버튼 클릭 시 이벤트 지정
+	$('#main-top-init-btn').on('click', function(){
+		initializeData();
+	});
+	//그리드 상단 기존 건 수정 시 validation check
+	let isUpdateValidationFail = false;
+	let validationFailArray = [];
+	
+	gridMainTop.on('beforeChange', function(e){
+		let changes = e.changes;
+		if(changes != null && changes.length > 0){
+			
+			isUpdateValidationFail = false;
+			validationFailArray = [];
+			
+			for(let change of changes){
+				//변경되고자하는 컬럼이 검수량일 때,
+				if(change.columnName == 'inspectQuantity'){
+					let cellData = gridMainTop.getRow(change.rowKey);
+					//기존 건인지 판별
+					if(cellData.matInspectCode != null){
+						let inspectableQuantity = cellData.quantity - (cellData.prevQuantity - change.value);
+						if(inspectableQuantity < Number(change.nextValue)){
+							toastr.error("검수할 수 있는 수량이 적합하지 않습니다. 검수 가능량: " + inspectableQuantity);
+							toastr.error("수정해야 할 검수코드: " + cellData.matInspectCode);
+							
+							validationFailArray.push({
+								matInspectCode : cellData.matInspectCode,
+								inspectableQ : inspectableQuantity
+							});
+							
+							isUpdateValidationFail = true;
+						}
+					}
+				}
+			}
+		}
+	});
+	
+	//저장버튼 클릭 시 이벤트 지정
+	$('#main-top-save-btn').on('click', function(){		
+		let currentData = gridMainTop.getData();
+				
+		//기존건인지 판별
+		if(currentData == null || currentData.length < 1){
+			toastr.warning('등록하거나 저장할 데이터가 없습니다.');
+			return;
+		}
+		
+		let result;
+		
+		//입력값 validation 체크 			
+		for(let data of currentData){	
+			let inspectQuantity = Number(data.inspectQuantity); //검수량
+			let errorQuantity = Number(data.errorQuantity); //불량량
+			//검수량 >= 불량량
+			if(!(inspectQuantity >= errorQuantity)){
+				toastr.warning('불량량은 검수량을 넘을 수 없습니다.');
+				return;
+			}
+		}
+		
+		if(currentData[0].matInspectCode != null){
+			//해당 검수내역을 기반으로 입고된 자재LOT가 홀드 상태인지 확인
+			let holdMatData = getHoldMatData(currentData);
+			if(holdMatData != null && Object.keys(holdMatData).length > 0){
+				toastr.error('홀드된 자재 정보가 있어 수정 및 삭제가 불가합니다. \n 자재 검수 코드: ' + Object.keys(holdMatData));
+				return;
+			}
+			
+			//기존 건 업데이트 가능한 수량인지 validation check
+			if(isUpdateValidationFail == true){
+				if(validationFailArray != null && validationFailArray.length > 0){
+					for(let data of validationFailArray){
+						toastr.error("검수할 수 있는 수량이 적합하지 않습니다. 검수 가능량: " + data.inspectableQ);
+						toastr.error("수정해야 할 검수코드: " + data.matInspectCode);
+						return;
+					}	
+				}
+			}
+			
+			//기존건 수정
+			result = updateInspectedData(currentData);
+		} else{
+			//입력값 validation 체크 			
+			for(let data of currentData){
+				
+				//((발주수량 - 기검수량) >= 검수량)
+				let quantity = Number(data.quantity); //발주수량
+				let prevQuantity = Number(data.prevQuantity); //기검수량
+				let inspectQuantity = Number(data.inspectQuantity); //검수량
+				let errorQuantity = Number(data.errorQuantity); //불량량
+				
+				let inspectableQuantity = quantity - prevQuantity;
+				console.log(quantity);
+				console.log(prevQuantity);
+				console.log(inspectQuantity);
+				console.log(inspectableQuantity);
+				if(inspectableQuantity < inspectQuantity){
+					toastr.warning('검수할 수 있는 최대량이 넘었습니다. 검수 가능 량: ' + inspectableQuantity);
+					toastr.warning('수정해야 할 발주 항목: ' + data.orderName);
+					return;
+				}
+			}
+			
+			//신규건 등록
+			let sendData = [];
+			for(let data of currentData){
+				sendData.push({
+					matOrderCode : data.matOrderCode,
+					matCode : data.matCode,
+					matOrderDetailCode : data.matOrderDetailCode,
+					inspectQuantity : data.inspectQuantity,
+					errorQuantity : data.errorQuantity,
+					note : data.note,
+					empName : data.empName,
+					empCode : data.empCode
+				});
+			}
+			result = createNewInspection(sendData);
+		}
+		
+		if(result != null){
+			toastr.success(result);		
+		}
+		
+		initializeData();
+	});
+	//삭제 버튼 클릭 시 이벤트 지정
+	$('#main-top-delete-btn').on('click', function(){
+		//기존건인지 판별
+		let currentData = gridMainTop.getData();
+		
+		if(currentData == null || currentData.length < 1){
+			toastr.warning('삭제할 검수 정보가 없습니다.');
+			return;
+		}
+		
+		if(currentData[0].matInspectCode != null){
+			//해당 검수내역을 기반으로 입고된 자재LOT가 홀드 상태인지 확인
+			let holdMatData = getHoldMatData(currentData);
+			if(holdMatData != null && Object.keys(holdMatData).length > 0){
+				toastr.error('홀드된 자재 정보가 있어 수정 및 삭제가 불가합니다.');
+				return;
+			}
+			
+			//기존건 삭제
+			let result = deleteInspedtedData(currentData);
+			
+			if(result != null){
+				toastr.success(result);		
+			}
+		}
+		initializeData();
+	})
+	//모달창 검색 태그 값 캐싱
+	let radioVal = $('input:radio[name="flexRadioDefault"]');
+	let matOrderInputVal = $('#modal-search-matOrder-input');
+	let matInspectInputVal = $('#modal-search-matInspection-input');
+	
+	//발주 조회 모달 켜질 때 마다 실행될 이벤트 지정
+	$('#search-MatOrder-Modal').on('shown.bs.modal', function(){
+		let data = searchMatOrdersData([]);
+		matOrderModalGrid.resetData(data);
+		matOrderModalGrid.refreshLayout();
+	});
+	
+	//발주 조회 모달 꺼질 때 마다 실행될 이벤트 지정
+	$('#search-MatOrder-Modal').on('hidden.bs.modal', function(){
+		radioVal.removeAttr('checked');
+		radioVal[0].checked = true; //Radio 값 초기화
+		
+		warningCheck = 0;
+		
+		matOrderInputVal.val('');
+		
+		matOrderModalGrid.resetData([]);
+		matOrderModalGrid.refreshLayout();
+	});
+	
+	//발주 조회 모달 검색 버튼 이벤트 함수
+	$('#modal-matOrder-search-btn').on('click', function(){
+		clickMatOrderSearchButton();
+	});
+	$('#modal-search-matOrder-input').keyup(function(e){
+		if(e.keyCode == 13){
+			clickMatOrderSearchButton();
+		}
+	});
+	function clickMatOrderSearchButton(){
+		//radio checked값 가져오기
+		let radioData = $('input:radio[name="flexRadioDefault"]:checked').val();
+		
+		//현재 검색창의 입력값 가져오기
+		let inputData = matOrderInputVal.val();
+		
+		let data = {
+				radioVal : radioData,
+				inputVal : inputData
+		};
+		
+		//데이터 조회하기
+		let foundData = searchMatOrdersData(data);
+		matOrderModalGrid.resetData(foundData != null ? foundData : []);
+		matOrderModalGrid.refreshLayout();
+	}
+	
+	//검수 내역 조회 모달 켜질 때 마다 실행될 이벤트 지정
+	$('#search-MatInspection-Modal').on('shown.bs.modal', function(){
+		let data = getMatInspectListData();
+		matInspectModalGrid.resetData(data);
+		matInspectModalGrid.refreshLayout();
+	});
+	
+	//검수 내역 조회 모달 꺼질 때 마다 실행될 이벤트 지정
+	$('#search-MatInspection-Modal').on('hidden.bs.modal', function(){
+		matInspectInputVal.val('');
+		
+		warningCheck = 0;
+		
+		matInspectModalGrid.resetData([]);
+		matInspectModalGrid.refreshLayout();
+	});
+	
+	//검수 내역 조회 모달 검색 버튼 이벤트 함수
+	$('#modal-matInspection-search-btn').on('click', function(){
+		searchMatInspectionSearchButton();
+	});
+	$('#modal-search-matInspection-input').keyup(function(e){
+		if(e.keyCode == 13){
+			searchMatInspectionSearchButton();
+		}
+	});
+	function searchMatInspectionSearchButton(){
+		//현재 검색창의 입력값 가져오기
+		let inputData = matInspectInputVal.val();
+		//데이터 조회하기
+		let foundData = searchMatInspectListData(inputData);
+		matInspectModalGrid.resetData(foundData != null ? foundData : []);
+		matInspectModalGrid.refreshLayout();
+	}
+	//초기화 함수
+	function initializeData(){
+		warningCheck = 0;
+		
+		gridMainTop.resetData([]);
+		let today = new Date();
+		let inspDataPerDate = inspectedMatDataPerDate(today);
+		gridMainBottom.resetData(inspDataPerDate != null && inspDataPerDate.length > 0 ? inspDataPerDate : []);
+		
+		gridMainTop.refreshLayout();
+		gridMainBottom.refreshLayout();
+	}
+	
+	//발주 조회 모달창 데이터 조회하기
+	function searchMatOrdersData(data){
+		let result;
+		$.ajax({
+			url: '/uncompletedMatOrderListAjax',
+			method: 'POST',
+			data: data,
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(data){
+				data.length > 0 ? result = data : toastr.error('조회된 데이터가 없습니다.');
+			},
+			error: function(error){
+				toastr.error('자재 발주 검색 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//검수 내역 조회 모달창 데이터 가져오기
+	function getMatInspectListData(){
+		let result;
+		$.ajax({
+			url: '/inspectedMatOrderListAjax',
+			method: 'GET',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(data){
+				result = data;
+			},
+			error: function(error){
+				toastr.error('선택한 검수 내역 가져오기 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	function dateFormat(date) {
+		
+		return dateFormat2;
+	}
+	//메인 하단 일일 검수 내역 데이터 가져오기
+	function inspectedMatDataPerDate(date){
+		let dateFormat = date.getFullYear() +
+		'-' + ( (date.getMonth()+1) < 9 ? "0" + (date.getMonth()+1) : (date.getMonth()+1) )+
+		'-' + ( (date.getDate()) < 9 ? "0" + (date.getDate()) : (date.getDate()) );
+		
+		let result;
+		$.ajax({
+			url: '/inspectedMatDataPerDateAjax',
+			method: 'POST',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			data: {
+				dateString : dateFormat
+			},
+			async: false,
+			success: function(data){
+				result = data;
+			},
+			error: function(error){
+				toastr.error('일일 검수 내역 조회 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//검수 내역 조회 모달창 데이터 조회하기
+	function searchMatInspectListData(sendData){
+		let result;
+		$.ajax({
+			url: '/inspectedMatOrderListAjax',
+			method: 'POST',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			data: {
+				matOrderName : sendData
+			},
+			async: false,
+			success: function(resData){
+				result = resData;
+			},
+			error: function(error){
+				toastr.error('검색 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//메인 상단 검수 처리할 데이터 조회하기
+	function searchInspectableMatOrderDetailsData(matOrderCode){
+		let result;
+		$.ajax({
+			url: '/searchInspectableMatOrderDetailsDataAjax',
+			method: 'POST',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			data: {
+				matOrderCode:matOrderCode
+			},
+			async: false,
+			success: function(data){
+				if(data != null && data.length > 0){
+					for(let d of data){
+						d.empName = sessionEmpName;
+						d.empCode = sessionEmpCode;	
+					}
+					result = data;
+				} else {
+					toastr.error('조회된 데이터가 없습니다.');	
+				}
+			},
+			error: function(error){
+				toastr.error('검수 처리할 목록 검색 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//메인 상단 검수된 단건 정보 조회하기
+	function searchInspectedMatOrderData(matInspectCode){
+		let result;
+		$.ajax({
+			url: '/searchInspectedMatOrderDataAjax',
+			method: 'POST',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			data: {
+				matInspectCode : matInspectCode
+			},
+			async: false,
+			success: function(data){
+				data != null ? result = data : toastr.error('조회된 데이터가 없습니다.');
+			},
+			error: function(error){
+				toastr.error('검수 처리된 단건 정보 검색 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//새로운 검수 처리 등록
+	function createNewInspection(sendData){
+		let result;
+		$.ajax({
+			url: '/createNewInspectionAjax',
+			method: 'POST',
+			data: JSON.stringify(sendData),
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			contentType: "application/json",
+			async: false,
+			success: function(resData){
+				result = resData;
+			},
+			error: function(error){
+				toastr.error('검수 등록 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//기존 검수 건 업데이트
+	function updateInspectedData(sendData){
+		let result;
+		$.ajax({
+			url: '/updateInspectedDataAjax',
+			method: 'POST',
+			data: JSON.stringify(sendData),
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			contentType: "application/json",
+			async: false,
+			success: function(resData){
+				result = resData;
+			},
+			error: function(error){
+				toastr.error('검수 정보 수정 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//기존 검수 건 삭제
+	function deleteInspedtedData(sendData){
+		let result;
+		$.ajax({
+			url: '/deleteInspectedDataAjax',
+			method: 'POST',
+			data: JSON.stringify(sendData),
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			contentType: "application/json",
+			async: false,
+			success: function(resData){
+				result = resData;
+			},
+			error: function(error){
+				toastr.error('검수 정보 삭제 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	//기존 검수 건에 의한 LOT자재 정보
+	function getHoldMatData(sendData){
+		let result;
+		$.ajax({
+			url: '/getStoredMatDataAjax',
+			method: 'POST',
+			data: JSON.stringify(sendData),
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			contentType: "application/json",
+			async: false,
+			success: function(resData){
+				result = resData;
+			},
+			error: function(error){
+				toastr.error('저장된 자재 정보 조회 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	</script>   
+</html>

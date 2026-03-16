@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css"
+        integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <link th:href="@{/css/signin.css}" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+
+    <title>Login</title>
+    <style>
+        body {
+            background: #efede9;
+        }
+
+        .h1-icon {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        .form-signin {
+            width: 400px; 
+            height: 600px; 
+            margin: 0 auto; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .form-signin .form-control {
+            margin-bottom: 10px; 
+        }
+        .login-btn{
+        	background: black;
+        	color: white;
+        }
+        .login-btn:hover{
+        	color: white;
+        }
+    </style>
+</head>
+<body class="text-center" >
+    <form class="form-signin" th:action="@{/account/login}"method="post">
+        <img th:src="@{/images/allIn.png}" width="300">
+        <div th:if="${param.error}" class="alert alert-dark" role="alert">
+            아이디 또는 비밀번호가 일치하지 않습니다.
+        </div>
+        <label for="username" class="sr-only">Username</label>
+        <input type="text" id="username" name="username" class="form-control" placeholder="아이디" required autofocus>
+        <label for="inputPassword" class="sr-only">Password</label>
+        <input type="password" id="inputPassword" name="password" class="form-control" placeholder="비밀번호" required>
+        <!-- <div class="checkbox mb-3">
+          <label>
+            <input type="checkbox" value="remember-me"> Remember me
+          </label>
+        </div> -->
+        <button class="btn btn-lg login-btn" type="submit">로그인</button>
+        <p class="mt-4 mb-3 text-muted">&copy; copyright fourMen.</p>
+    </form>
+</body>
+</html>

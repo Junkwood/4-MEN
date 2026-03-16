@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{common/layouts/default_layout}" layout:fragment="Content">
+
+<head>
+  <link th:href="@{/css/order.css}" rel="stylesheet">
+  <!-- https://github.com/nhn/tui.grid/blob/master/packages/toast-ui.grid/examples/example08-date-picker.html -->
+  <style>
+    body {
+      background-color: #e9ecef;
+    }
+
+    .order-select1 {
+      display: inline;
+      width: 20%;
+      height: 35px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+
+    .order-search1 {
+      display: inline;
+      width: 20%;
+      height: 35px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+
+    .searchBtn {
+      float: none;
+    }
+
+    .search {
+      width: 60%;
+      padding: 20px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      box-shadow: 4px 4px 4px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+    }
+    .search2 {
+      width: 38%;
+      padding: 20px 20px 0px 20px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      box-shadow: 4px 4px 4px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+      float: right;
+    }
+
+    .search1 {
+      padding: 20px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      box-shadow: 4px 4px 4px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .search h3 {
+      margin-bottom: 20px;
+    }
+
+    .tui-datepicker-input.tui-datetime-input.tui-has-focus.b {
+      z-index: 100;
+    }
+
+    .tui-datepicker-input.tui-datetime-input.tui-has-focus.a {
+      z-index: 150;
+    }
+  </style>
+</head>
+
+<body>
+  <h1 class="fw-bold py-1 mt-1 mb-4">자재 입출고 조회</h1>
+  <div>
+    <div class="search2">
+      <span style="float: left; font-weight: bolder;">재고조회</span>
+      <div id="grid4"></div>
+    </div>
+    <div class="search col-12">
+      <fieldset style="float: right;" id="gridselect">
+        <span class="fw-bold text-dark fw-light">확인할 목록을 선택해주세요.</span>
+        <br>
+        <br>
+        <span>
+          <input type="radio" id="matStore" name="drone" value="matStore" checked />
+          <label for="matStore">자재입고</label>
+        </span>
+        <span>
+          <input type="radio" id="matHold" name="drone" value="matHold" />
+          <label for="matHold">자재홀드</label>
+        </span>
+        <span>
+          <input type="radio" id="matRelease" name="drone" value="matRelease" />
+          <label for="matRelease">자재출고</label>
+        </span>
+        <p></p>
+        <br>
+        <br>
+        <div style="text-align: right;">
+          <button class="btn btn-outline-success searchBtn" type="button" id="searchBtn" style="display: inline-block;">검색</button>
+        </div>
+      </fieldset>
+      <h3 class="fw-bold py-1 mb-4 text-dark fw-light">검색조건</h3>
+      <div class="row">
+        <div class="col-12" id="searchMenu">
+          <select class="form-select order-select1" aria-label="Default select example" id="nameSelect">
+            <option selected value="ms.lot">로트</option>
+            <option value="mc.mat_name">자재명</option>
+            <option value="mi.mat_inspect_code">검수코드</option>
+            <option value="pc.prod_name">제품명</option>
+            <option value="wi.work_name">지시명</option>
+          </select>
+          <input class="form-control order-search1" type="search" placeholder="검색" aria-label="Search" id="searchName">
+          <select class="form-select order-select1" aria-label="Default select example" id="empSelect">
+            <option selected value="e.emp_name">이름</option>
+            <option value="e.dept_id">부서</option>
+            <option value="e.rank">직급</option>
+          </select>
+          <input class="form-control order-search1" type="search" placeholder="검색" aria-label="Search" id="searchEmp">
+        </div>
+      </div>
+
+      <!-- ================================================= -->
+      <div id="datepick">
+        <div class="col-12" id="startDate">
+          <p class="fw-bold text-dark fw-light" style="display:inline-block; width: 100px;">입고일</p>
+          <p class="fw-bold text-dark fw-light" style="display:inline-block; width: 100px;">출고일</p>
+          <div class="tui-datepicker-input tui-datetime-input tui-has-focus a">
+            <input id="startpicker-input1" type="text" aria-label="Date">
+            <span class="tui-ico-date"></span>
+            <div id="startpicker-container1"></div>
+          </div>
+          <span>~</span>
+          <div class="tui-datepicker-input tui-datetime-input tui-has-focus a">
+            <input id="endpicker-input1" type="text" aria-label="Date">
+            <span class="tui-ico-date"></span>
+            <div id="endpicker-container1"></div>
+          </div>
+        </div>
+
+        <div class="col-12" id="endDate">
+          <p class="fw-bold text-dark fw-light" style="display:inline-block; width: 100px;">검수일</p>  
+          
+          <div class="tui-datepicker-input tui-datetime-input tui-has-focus b">
+            <input id="startpicker-input2" type="text" aria-label="Date">
+            <span class="tui-ico-date"></span>
+            <div id="startpicker-container2" style="margin-left: -1px;"></div>
+          </div>
+          <span>~</span>
+          <div class="tui-datepicker-input tui-datetime-input tui-has-focus b">
+            <input id="endpicker-input2" type="text" aria-label="Date">
+            <span class="tui-ico-date"></span>
+            <div id="endpicker-container2" style="margin-left: -1px;"></div>
+          </div>
+        </div>
+        </div>
+
+        </div>
+
+    <!-- ===================================================== -->
+    <div class="search1">
+      <div class="row orderCallTable">
+        <div class="col-12" id="div1" style="display: block;">
+          <h3 class="fw-bold py-1 mb-4 text-dark fw-light">자재 입고 목록</h3>
+          <div id="grid1"></div>
+        </div>
+        <div class="col-12" id="div2" style="display: none;">
+          <h3 class="fw-bold py-1 mb-4 text-dark fw-light">자재 홀드 목록</h3>
+          <div id="grid2"></div>
+        </div>
+        <div class="col-12" id="div3" style="display: none;">
+          <h3 class="fw-bold py-1 mb-4 text-dark fw-light">자재 출고 목록</h3>
+          <div id="grid3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+<script th:inline="javascript">
+  //================================================================================
+  const ndate = new Date();
+  const year = ndate.getFullYear();
+  const month = (ndate.getMonth() + 1).toString().padStart(2, '0'); 
+  const day = ndate.getDate().toString().padStart(2, '0');
+  const today = `${year}-${month}-${day}`;
+  function dateformatter(date1){
+    let date = new Date(date1);
+  let year1 = date.getFullYear();
+  let month1 = (date.getMonth() + 1).toString().padStart(2, '0'); 
+  let day1 = date.getDate().toString().padStart(2, '0');
+  let result = `${year1}-${month1}-${day1}`;
+  return result;
+  }
+  let pList = [];
+  const token = $("meta[name='_csrf']").attr("content")
+  const header = $("meta[name='_csrf_header']").attr("content");
+
+  var picker1 = tui.DatePicker.createRangePicker({
+    startpicker: {
+      input: '#startpicker-input1',
+      container: '#startpicker-container1'
+    },
+    endpicker: {
+      input: '#endpicker-input1',
+      container: '#endpicker-container1'
+    },
+    format: 'YYYY-MM-dd',
+  });
+  var picker2 = tui.DatePicker.createRangePicker({
+    startpicker: {
+      input: '#startpicker-input2',
+      container: '#startpicker-container2'
+    },
+    endpicker: {
+      input: '#endpicker-input2',
+      container: '#endpicker-container2'
+    },
+    format: 'YYYY-MM-dd',
+  });
+
+  function dateReset(){
+  picker1.setStartDate(null);
+  picker1.setEndDate(null);
+  picker2.setStartDate(null);
+  picker2.setEndDate(null);
+  }
+  dateReset()
+  picker1.on('change:end', () => {
+    console.log(123);
+  })
+  const grid1 = new tui.Grid({
+    el: document.getElementById('grid1'),
+    scrollX: false,
+    scrollY: true,
+    minBodyHeight: 400,
+    rowHeaders: [
+      { type: 'rowNum', align: 'center' },
+    ],
+    columns: [
+      {
+        header: '로트',
+        name: 'lot',
+        align: 'center',
+        width: '120',
+        sortable: true,
+      },
+      {
+        header: '자재명',
+        name: 'matName',
+        align: 'center',
+        width: '110',
+        sortable: true,
+      },
+      {
+        header: '처리자',
+        name: 'empName',
+        align: 'center',
+        width: '80',
+        sortable: true,
+      },
+      {
+        header: '직급',
+        name: 'rank',
+        align: 'center',
+        width: '60',
+        sortable: true,
+      },
+      {
+        header: '부서',
+        name: 'deptId',
+        align: 'center',
+        width: '60',
+        sortable: true,
+      },
+      {
+        header: '입고일',
+        name: 'storeDate',
+        align: 'center',
+        width: '110',
+        sortable: true,
+      },
+      {
+        header: '검수일',
+        name: 'inspectDate',
+        align: 'center',
+        width: '110',
+        sortable: true,
+      },
+      {
+        header: '입고량',
+        name: 'storeQuantity',
+        align: 'right',
+        width: '70'
+      },
+      {
+         header:'단위',
+         name:'unit',
+         align:'center',
+         width: 'auto'
+        },
+      {
+        header: '자재검수코드',
+        name: 'matInspectCode',
+        align: 'center',
+        width: '140',
+        sortable: true,
+      },
+      {
+        header: '비고',
+        name: 'note',
+        align: 'center'
+
+      },
+    ],
+    pageOptions: {
+      useClient: true,
+      perPage: 10
+    },
+    columnOptions: {
+        resizable: true
+      }
+  });
+  const grid2 = new tui.Grid({
+    el: document.getElementById('grid2'),
+    scrollX: false,
+    scrollY: true,
+    minBodyHeight: 400,
+    rowHeaders: [
+      { type: 'rowNum', align: 'center' },
+    ],
+    columns: [
+      {
+        header: '지시명',
+        name: 'workName',
+        align: 'center',
+        width: '110'  ,
+        sortable: true,
+      },
+      {
+        header: '제품명',
+        name: 'prodName',
+        align: 'center',
+        width: '110',
+        sortable: true,
+      },
+      {
+        header: '지시자',
+        name: 'empName',
+        align: 'center',
+        width: '80',
+        sortable: true,
+      },
+      {
+        header: '직급',
+        name: 'rank',
+        align: 'center',
+        width: '60',
+        sortable: true,
+      },
+      {
+        header: '부서',
+        name: 'deptId',
+        align: 'center',
+        width: '60',
+        sortable: true,
+      },
+      {
+        header: '로트',
+        name: 'lot',
+        align: 'center',
+        width: '110',
+        sortable: true,
+      },
+      {
+        header: '자재명',
+        name: 'matName',
+        align: 'center',
+        width: '110',
+        sortable: true,
+      },
+      {
+        header: '홀드수량',
+        name: 'holdQuantity',
+        align: 'right',
+        width: '70'
+      },
+      {
+         header:'단위',
+         name:'unit',
+         align:'center',
+         width: '20'
+        },
+      {
+        header: '상태',
+        name: 'progress',
+        align: 'center',
+        width: '80',
+        sortable: true,
+      },
+    ],
+    pageOptions: {
+      useClient: true,
+      perPage: 10
+    },
+    columnOptions: {
+        resizable: true
+      }
+  });
+  const grid3 = new tui.Grid({
+    el: document.getElementById('grid3'),
+    scrollX: false,
+    scrollY: true,
+    minBodyHeight: 400,
+    rowHeaders: [
+      { type: 'rowNum', align: 'center' },
+    ],
+    columns: [
+      {
+        header: '자재로트',
+        name: 'matLot',
+        align: 'center',
+        width: '110',
+        sortable: true,
+      },
+      {
+        header: '자재명',
+        name: 'matName',
+        align: 'center',
+        width: '110',
+        sortable: true,
+        rowSpan: true
+      },
+      {
+        header: '작업지시명',
+        name: 'workName',
+        align: 'center',
+        width: '110',
+        sortable: true,
+        rowSpan: true
+      },
+      {
+        header: '제품명',
+        name: 'prodName',
+        align: 'center',
+        width: '110',
+        sortable: true,
+      },
+      {
+        header: '제품명',
+        name: 'prodLot',
+        align: 'center',
+        width: '110',
+        sortable: true,
+        rowSpan: true
+      },
+      {
+        header: '출고일',
+        name: 'releaseDate',
+        align: 'center',
+        width: '110',
+        sortable: true,
+        rowSpan: true
+      },
+      {
+        header: '출고량',
+        name: 'releaseQuantity',
+        align: 'right',
+        width: '70',
+        rowSpan: true
+      },
+      {
+         header:'단위',
+         name:'unit',
+         align:'center',
+         width: '20'
+        },
+    ],
+    pageOptions: {
+      useClient: true,
+      perPage: 10
+    },
+    columnOptions: {
+        resizable: true
+      }
+  });
+  const grid4 = new tui.Grid({
+    el: document.getElementById('grid4'),
+    scrollX: false,
+    scrollY: true,
+    minBodyHeight: 116,
+    columns: [
+      {
+        header:'자재명',
+        name: 'matName',
+        align: 'center',
+        width: '110',
+        sortable: true,
+        filter: 'select'
+      },
+      {
+        header: '재고량',
+        name: 'stock',
+        align: 'right',
+        width: '70',
+        sortable: true,
+        validation: {
+        dataType: 'number',
+        validatorFn: (value, row, columnName) => Number(value) > Number(row['safetystock'])
+        },
+      },
+      {
+        header: '안전재고',
+        name: 'safetystock',
+        align: 'right',
+        width: '70',
+        sortable: true,
+      },
+      {
+         header:'단위',
+         name:'unit',
+         align:'center',
+         width: '20'
+        },
+    ],
+    pageOptions: {
+      useClient: true,
+      perPage: 3
+    },
+    columnOptions: {
+        resizable: true
+      }
+  });
+
+  async function getMatStore(search1, keyword1, search2, keyword2, startDate1, endDate1, startDate2, endDate2) {
+    console.log(search1, keyword1, search2, keyword2, startDate1, endDate1, startDate2, endDate2)
+    await fetch(`/getMatStore?search1=${search1}&keyword1=${keyword1}&search2=${search2}&keyword2=${keyword2}&startDate1=${startDate1}&endDate1=${endDate1}&startDate2=${startDate2}&endDate2=${endDate2}`)
+      .then(res => res.json())
+      .then(res => {
+        grid1.resetData(res);
+      })
+  };
+  async function getMatHold(search1, keyword1, search2, keyword2) {
+    console.log(search1, keyword1, search2, keyword2)
+    await fetch(`/getMatHold?search1=${search1}&keyword1=${keyword1}&search2=${search2}&keyword2=${keyword2}`)
+      .then(res => res.json())
+      .then(res => {
+        grid2.resetData(res);
+      })
+  };
+  async function getMatRelease(search1, keyword1, startDate1, endDate1) {
+    console.log(search1, keyword1, startDate1, endDate1)
+    await fetch(`/getMatRelease?search1=${search1}&keyword1=${keyword1}&startDate1=${startDate1}&endDate1=${endDate1}`)
+      .then(res => res.json())
+      .then(res => {
+        grid3.resetData(res);
+      })
+  };
+  async function getMatStock() {
+    await fetch(`/getMatStock`)
+      .then(res => res.json())
+      .then(res => {
+        console.log(res)
+        grid4.resetData(res);
+      })
+  };
+  getMatStore('ms.lot', '%', 'e.emp_name', '%', null, null, null, null)
+  getMatHold('ms.lot', '%', 'e.emp_name', '%')
+  getMatRelease('ms.lot', '%', null, null)
+  getMatStock()
+  $('#searchBtn').on('click', (e) => {
+    let search1 = $('#nameSelect option:selected').val()
+    let keyword1 = $('#searchName').val()
+    let search2 = $('#empSelect option:selected').val()
+    let keyword2 = $('#searchEmp').val()
+    let startDate1 = picker1.getStartDate()
+    let endDate1 = picker1.getEndDate()
+    let startDate2 = picker2.getStartDate()
+    let endDate2 = picker2.getEndDate()
+    if(startDate1!=null){
+        startDate1=dateformatter(startDate1);
+    }
+    if(startDate2!=null){
+        startDate2=dateformatter(startDate2);
+    }
+    if(endDate1!=null){
+        endDate1=dateformatter(endDate1);
+    }
+    if(endDate2!=null){
+        endDate2=dateformatter(endDate2);
+    }
+    let selected = $('#gridselect input:checked').val();
+    if (selected == 'matStore') {
+      getMatStore(search1, keyword1, search2, keyword2, startDate1, endDate1, startDate2, endDate2);
+    } else if (selected == 'matHold') {
+      getMatHold(search1, keyword1, search2, keyword2)
+    } else if (selected == 'matRelease') {
+      getMatRelease(search1, keyword1,startDate1, endDate1)
+    }
+    $('#searchName').val('')
+    $('#searchEmp').val('')
+    getMatStock()
+  })
+  $('#searchMenu').on('keyup', (e) => {
+    if(e.keyCode==13){
+      let search1 = $('#nameSelect option:selected').val()
+      let keyword1 = $('#searchName').val()
+      let search2 = $('#empSelect option:selected').val()
+      let keyword2 = $('#searchEmp').val()
+      let startDate1 = picker1.getStartDate()
+      let endDate1 = picker1.getEndDate()
+      let startDate2 = picker2.getStartDate()
+      let endDate2 = picker2.getEndDate()
+      if(startDate1!=null){
+          startDate1=dateformatter(startDate1);
+      }
+      if(startDate2!=null){
+          startDate2=dateformatter(startDate2);
+      }
+      if(endDate1!=null){
+          endDate1=dateformatter(endDate1);
+      }
+      if(endDate2!=null){
+          endDate2=dateformatter(endDate2);
+      }
+      let selected = $('#gridselect input:checked').val();
+      if (selected == 'matStore') {
+        getMatStore(search1, keyword1, search2, keyword2, startDate1, endDate1, startDate2, endDate2);
+      } else if (selected == 'matHold') {
+        getMatHold(search1, keyword1, search2, keyword2)
+      } else if (selected == 'matRelease') {
+        getMatRelease(search1, keyword1,startDate1, endDate1)
+      }
+      $('#searchName').val('')
+      $('#searchEmp').val('')
+      getMatStock()
+    }
+  })
+  
+  function dateformatter(date) {
+    let year1 = date.getFullYear();
+    let month1 = (date.getMonth() + 1).toString().padStart(2, '0');
+    let day1 = date.getDate().toString().padStart(2, '0');
+    let result = `${year1}-${month1}-${day1}`;
+    return result;
+  }
+  $('#nameSelect option:eq(3),#nameSelect option:eq(4)').hide()
+  $('#gridselect').on('click', (e) => {
+    if (e.target.value == 'matStore') {
+      $('#div1').show()
+      $('#div2').hide()
+      $('#div3').hide()
+      $('#datepick').css('visibility', 'visible')
+      $('#startDate p:eq(0)').show()
+      $('#startDate p:eq(1)').hide()
+      $('#endDate').css('visibility', 'visible')
+      $('#nameSelect option:eq(0)').prop('selected', true)
+      $('#nameSelect option:eq(3),#nameSelect option:eq(4)').hide()
+      $('#nameSelect option:eq(2)').show()
+      $('#empSelect, #searchEmp').show()
+      $('#searchName').val('')
+      $('#searchEmp').val('')
+      dateReset()
+      getMatStock()
+      grid1.refreshLayout();
+    } else if (e.target.value == 'matHold') {
+      $('#div1').hide()
+      $('#div2').show()
+      $('#div3').hide()
+      $('#datepick').css('visibility', 'hidden')
+      $('#endDate').css('visibility', 'hidden')
+      $('#nameSelect option:eq(0)').prop('selected', true)
+      $('#nameSelect option:eq(3),#nameSelect option:eq(4)').show()
+      $('#nameSelect option:eq(2)').hide()
+      $('#empSelect, #searchEmp').show()
+      $('#searchName').val('')
+      $('#searchEmp').val('')
+      getMatStock()
+      grid2.refreshLayout();
+    } else if (e.target.value == 'matRelease') {
+      $('#div1').hide()
+      $('#div2').hide()
+      $('#div3').show()
+      $('#datepick').css('visibility', 'visible')
+      $('#startDate p:eq(0)').hide()
+      $('#startDate p:eq(1)').show()
+      $('#endDate').css('visibility', 'hidden')
+      $('#nameSelect option:eq(0)').prop('selected', true)
+      $('#nameSelect option:eq(3),#nameSelect option:eq(4)').show()
+      $('#nameSelect option:eq(2)').hide()
+      $('#empSelect, #searchEmp').hide()
+      $('#searchName').val('')
+      $('#searchEmp').val('')
+      dateReset()
+      getMatStock()
+      grid3.refreshLayout()
+    }
+  })
+  $('#searchMenu').css('padding',0)
+  $('#startDate p:eq(1)').hide()
+  //===================================================================================
+
+</script>
+
+</html>

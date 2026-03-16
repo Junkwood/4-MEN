@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="com.aio.mes.facility.mapper.FacilityRepairMapper">
+  
+    <select id="basicList" parameterType="facilityVO">
+        SELECT n.fac_code,
+       			find_fac_name(n.fac_code) fac_name,
+      			r.breakdown,
+       			r.rep_class_code,
+       			r.rep_request_date
+		FROM fac_not n LEFT JOIN rep r
+         			  ON(n.fac_code=r.fac_code)
+		WHERE n.fac_not_reason_code='NF4'
+		AND r.rep_class_code IS NULL
+		AND n.not_end_date IS NULL
+        <if test="facName != null and !facName.equals('')">
+            AND find_fac_name(n.fac_code) LIKE '%'||#{facName}||'%'
+         </if>
+         <if test="repProcessDate1 != null and !repProcessDate1.equals('')">
+             ANd r.rep_process_date BETWEEN TO_DATE(#{repProcessDate1}, 'YYYY-MM-DD')
+                			      AND TO_DATE(#{repProcessDate2}, 'YYYY-MM-DD')
+         </if>
+    </select>
+      <select id="repairOptionList">
+           SELECT sub_code,
+     		 	  sub_code_name  
+			FROM mes_sub_code
+			WHERE main_code='RD'
+     </select>
+     <insert id="repairAdd" parameterType="facilityVO">
+       INSERT INTO rep
+               (rep_no,
+                fac_code,
+                rep_request_date,
+                breakdown,
+                rep_requester,
+                rep_class_code)
+		VALUES (AUTO_REP_CODE(),
+		        #{facCode},
+		        #{repRequestDate},
+		        #{breakdown},
+		        #{empCode},
+		        #{repClassCode})
+     </insert>
+     <select id="grid2BasicList" parameterType="facilityVO">
+        SELECT rep_no,
+       		   fac_code,
+       		   find_fac_name(fac_code) fac_name,
+       		   get_mes_sub_code_name(rep_class_code) rep_class_code,
+       		   rep_request_date,
+    		   breakdown
+		FROM rep
+		WHERE rep_history IS NULL
+		<if test="facName != null and !facName.equals('')">
+            AND find_fac_name(fac_code) LIKE '%'||#{facName}||'%'
+         </if>
+         <if test="repProcessDate1 != null and !repProcessDate1.equals('')">
+             ANd r.rep_process_date BETWEEN TO_DATE(#{repProcessDate1}, 'YYYY-MM-DD')
+                			      AND TO_DATE(#{repProcessDate2}, 'YYYY-MM-DD')
+         </if>
+     </select>
+     <update id="grid2Add" parameterType="facilityVO">
+        UPDATE rep
+        SET rep_history=#{repHistory},
+            rep_process_date=sysdate,
+            rep_manager=#{empCode},
+            note=#{note}
+       WHERE rep_no = #{repNo}
+     </update>
+     <update id="grid2Status" parameterType="facilityVO">
+       UPDATE fac
+       SET fac_status='FS1'
+       WHERE fac_code=#{facCode}
+     </update>
+     <update id="grid2NoOper" parameterType="facilityVO">
+       UPDATE fac_not
+    	  SET not_end_date=sysdate
+    	WHERE fac_not_reason_code='NF4'
+    	  AND fac_code=#{facCode}
+     </update>
+     <delete id="grid2Delete" parameterType="facilityVO">
+        DELETE FROM rep
+    	WHERE rep_no= #{repNo}
+     </delete>
+  </mapper>

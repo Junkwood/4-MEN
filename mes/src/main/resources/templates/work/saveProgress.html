@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/kiosk_layout}"
+      layout:fragment="Content">      
+<link th:href="@{/css/saveProgress.css}" rel="stylesheet">
+
+<!-- csrf 토큰번호 -->
+<meta name="_csrf" th:content="${_csrf.token}"/>
+<meta name="_csrf_header" th:content="${_csrf.headerName}"/> 
+  
+<body>
+
+  <div class="Container kiosk">
+  	<!-- 상단 nav -->
+    <div class="bg-primary header-div">
+      <button type="button" id="go-back">
+        <img th:src="@{/images/backward.png}" alt="뒤로가기" onClick="history.go(-1)">
+      </button>
+      <button type="button" id="go-home">
+        <img th:src="@{/images/home.png}" alt="홈으로" onClick="location.href='/'">
+      </button>
+    </div>
+    
+    <br>
+    
+    <!-- 상단 작업 진행 정보 -->
+    <div class="top-grid-div">
+	    <p class="h1">실적 등록</p>
+	    <div id="grid-main-top"></div>
+    </div>
+    
+    <br>
+    
+    <div class="input-div-parent">
+	    <!-- 개인 실적량 기입 -->
+	    <div class="input-grid-div">
+	    	<p class="h3">입력란</p>
+	    	<button type="button" class="btn btn-outline-primary save-btn">저장</button>
+	    	<div id="grid-main-input"></div>
+	    </div>
+	    
+	    <!-- 작업 시작 | 종료 버튼 -->
+	    <div class="input-button-div">
+	    	<button type="button" class="btn btn-outline-success start-btn">작업 시작</button>
+	    	<button type="button" class="btn btn-outline-danger end-btn">작업 종료</button>
+	    </div>
+    </div>
+  </div>
+  
+  <!-- 키패드 모달 -->
+		<div class="modal fade" id="keypad-Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		  <div class="modal-dialog modal-dialog-centered modal-md">
+		    <div class="modal-content">
+		      <div class="modal-header">
+		      	<div class="modal-header-title">
+			        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+		      	</div>
+
+		      </div>
+		      <div class="modal-body">
+			      <div class="container">
+					<div class="btn-group-vertical" role="group">
+					       <input class="form-control" id="keyPad-input">
+					        <div class="btn-group">
+					            <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(1)">1</button>
+					            <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(2)">2</button>
+					            <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(3)">3</button>
+					        </div>
+					        <div class="btn-group">
+					            <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(4)">4</button>
+					            <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(5)">5</button>
+					            <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(6)">6</button>
+					        </div>
+					        <div class="btn-group">
+					            <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(7)">7</button>
+					            <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(8)">8</button>
+					            <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(9)">9</button>
+					        </div>
+					        <div class="btn-group">
+					            <button type="button" class="btn btn-outline-danger py-4" onclick="KeyPadWrite(-1)">&lt; 삭제</button>
+					            <button type="button" class="btn btn-outline-secondary py-4" onclick="KeyPadWrite(0)">0</button>
+						        <button type="button" class="btn btn-outline-success py-4 keyPad-click">확인</button>
+					        </div>
+					</div>
+				</div>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+</body>
+<script th:inline="javascript">
+	//전역 변수
+	const token = $("meta[name='_csrf']").attr("content")
+	const header = $("meta[name='_csrf_header']").attr("content");
+	
+	//선택된 셀 체크 변수
+	let clickedCell = {
+			rowKey: 0,
+			columnName: ""
+	};
+	
+	let workProgressCode = [[${workProgressCode}]]; //작업 진행코드  
+	let empCode = [[${empCode}]]; //작업자 코드
+	let facCode = [[${facCode}]]; //설비 코드
+	let inputQuantity = [[${inputQuantity}]]; //투입량
+	let perfCode = [[${perfCode}]]; //실적코드(기존 건일 때 !=null)
+	
+	const gridMainTop = new tui.Grid({
+		el: document.getElementById('grid-main-top'),
+		scrollX: false,
+		scrollY: false,
+		columns: [
+			{
+				header: '공정명',
+				name: 'procName'
+			},
+			{
+				header: '설비명',
+				name: 'facName'
+			},
+			{
+				header: '제품명',
+				name: 'prodName'
+			},
+			{
+				header: '작업자명',
+				name: 'empName'
+			},
+			{
+				header: '투입량',
+				name: 'inputQuantity'
+			},
+			{
+				header: '불량량',
+				name: 'errorQuantity'
+			},
+			{
+				header: '생산량',
+				name: 'prodQuantity'
+			},
+			{
+				header: '기생산량',
+				name: 'producedQuantity'
+			},
+			{
+				header: '미생산량',
+				name: 'unproducedQuantity'
+			},
+			{
+				header: '작업시작일시',
+				name: 'workStartDate'
+			},
+			{
+				header: '작업종료일시',
+				name: 'workEndDate'
+			}
+		]
+	});
+	
+	const gridMainInput = new tui.Grid({
+		el: document.getElementById('grid-main-input'),
+		scrollX: false,
+		scrollY: false,
+		data: [
+			{
+				inputProdQuantity:0,
+				inputErrorQuantity:0
+			}	
+		],
+		columns: [
+			{
+				header: '생산량:',
+				name: 'inputProdQuantity',
+				editor: 'text',
+				validation: {
+					dataType: 'number'
+				}
+			},
+			{
+				header: '불량량:',
+				name: 'inputErrorQuantity',
+				editor: 'text',
+				validation: {
+					dataType: 'number'
+				}
+			},
+		],
+	});
+	
+	//기존 건인지 새로운 건인지 여부 파악 뒤 그리드 데이터 채우기
+	if(perfCode != null && perfCode != ''){
+		//기존 건 => 실적 코드 기반 기존 정보 가져오기
+		let prevPerfData = searchPerfData();
+		gridMainTop.resetData(prevPerfData != null ? prevPerfData : []);
+	} else {
+		//신규 건 => 작업진행코드 | 작업자코드 | 설비코드 | 투입량 기반 새로운 정보 만들기
+		
+		let newPerfFormData = [createNewPerfForm()];
+		gridMainTop.resetData(newPerfFormData != null ? newPerfFormData : []);
+	}
+	
+	//입력란 그리드 클릭 시 이벤트 함수
+	gridMainInput.on('click', (ev) => {
+		if(perfCode == null || perfCode == ''){
+			toastr.warning('입력할 실적 정보가 없습니다. 필요 시, 먼저 작업을 시작해주세요.');
+			return;
+		} 
+		
+		let id = gridMainInput.getValue(ev.rowKey, ev.columnName);
+		clickedCell.rowKey = ev.rowKey;
+		clickedCell.columnName = ev.columnName;
+		
+		if(id != null){
+			$('#keypad-Modal').modal('show');
+		};
+	});
+	
+	//키패드 입력 함수
+	function KeyPadWrite(add) {
+        if (add == "-1") {
+            document.getElementById('keyPad-input').value = document.getElementById('keyPad-input').value.slice(0, -1);
+        } 
+        // Max Length
+        else if (document.getElementById('keyPad-input').value.length < 6) {
+            document.getElementById('keyPad-input').value = document.getElementById('keyPad-input').value + add;
+        }
+    }
+	
+	//키패드 확인 버튼 함수
+	$('.keyPad-click').on('click', (ev) =>{
+		//입력한 개수
+		let inputVal = $('#keyPad-input').val();
+		
+		//입력 개수를 대입할 cell에 입력값 넣기
+		gridMainInput.setValue(clickedCell.rowKey, clickedCell.columnName, inputVal);
+		
+		//팝업 닫아주기
+		initKeyPadModal();
+		$('#keypad-Modal').modal('hide');
+	});
+	
+	//키패드 모달 꺼질 때 마다 실행될 이벤트 지정
+	$('#keypad-Modal').on('hidden.bs.modal', function(){
+		initKeyPadModal();
+		
+		//입력란 값 유효한지 검사(입력란의 생산량 + 불량량 <= 미생산량)
+		let mainGridData = gridMainTop.getData();
+		let inputGridData = gridMainInput.getData();
+		let sumInputValue = Number(inputGridData[0].inputProdQuantity) + Number(inputGridData[0].inputErrorQuantity); 
+		
+		for(let data of mainGridData){
+			if(data.unproducedQuantity != null){
+				if(data.unproducedQuantity < sumInputValue){
+					toastr.success('입력값이 미생산량을 넘어설 수 없습니다.');
+					initgridInputData();
+					break;
+				}		
+			}
+		}
+	});
+	
+	//저장 버튼 클릭 이벤트 함수
+	$('.save-btn').on('click', function(){
+		if(perfCode == null || perfCode == ''){
+			toastr.warning('저장할 실적 정보가 없습니다. 먼저 작업을 시작해주세요.');
+			return;
+		}
+		
+		savePerf(); //저장 프로세스
+		let PerfData = searchPerfData(); //실적코드 조회로 최신화된 실적 정보 다시 가져오기
+		gridMainTop.resetData(PerfData != null ? PerfData : []);
+		initgridInputData(); //입력란 초기화
+	});
+	
+	//작업 시작 버튼 클릭 이벤트 함수
+	$('.start-btn').on('click', function(){
+		// 작업자코드 | 투입량 | 설비코드
+		if(perfCode != null && perfCode != ''){
+			toastr.warning('시작할 실적 정보가 없습니다.');
+			return;
+		}
+		
+		createNewPerfData();
+	});
+	
+	//작업 종료 버튼 클릭 이벤트 함수
+	$('.end-btn').on('click', function(){
+		if(perfCode == null || perfCode == ''){
+			toastr.warning('종료할 실적 정보가 없습니다. 먼저 작업을 시작해주세요.');
+			return;
+		}
+		
+		savePerf(); //저장 프로세스
+		endPerf(); //작업 종료 프로세스
+		
+		let perfData = searchPerfData(); //실적코드 조회로 최신화된 실적 정보 다시 가져오기
+		gridMainTop.resetData(perfData != null ? perfData : []);
+		initgridInputData(); //입력란 초기화
+		location.replace('/prod/workProgress');
+	});
+	
+	function initKeyPadModal(){
+		$('#keyPad-input').val("");
+		clickedCell.rowKey = null;
+		clickedCell.columnName = null;	
+	}
+	
+	function initgridInputData(){
+		gridMainInput.resetData([
+			{
+				inputProdQuantity:0,
+				inputErrorQuantity:0
+			}	
+		]);
+	}
+	
+	//실적코드 기반 실적 조회
+	function searchPerfData(){
+		let result;
+		$.ajax({
+			url: '/perfData/' + perfCode,
+			method: 'GET',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(resData){
+				//기생산량 | 미생산량 필드 추가
+				if(resData != null){
+					for(let data of resData){
+						data.producedQuantity = data.prodQuantity + data.errorQuantity;
+						data.unproducedQuantity = data.inputQuantity - data.producedQuantity;
+					}
+				}
+				resData != null ? result = resData : toastr.error('조회된 데이터가 없습니다.');
+			},
+			error: function(error){
+				toastr.error('실적 조회 실패: 알 수 없는 에러 발생');
+			}
+		});
+		return result;
+	}
+	
+	//작업 저장 프로세스
+	function savePerf(){
+		/*
+		1. 사용자가 입력한 생산량, 불량량을 실적 관리 DB에 추가 반영
+		2. 작업 진행 현황의 불량량, 생산량 추가 기입. 다음 공정 순서가 있는지 확인하고 있다면 해당 공정에 지시량에 생산량을 덮어씌운다.
+		*/
+		if(perfCode == null){
+			toastr.warning('저장 할 실적이 없습니다.');
+			return;
+		}
+		
+		let inputData = gridMainInput.getData();
+		
+		$.ajax({
+			url:'/savePerf',
+			method: 'POST',
+			data: {
+				perfCode: perfCode,
+				prodQuantity: inputData[0].inputProdQuantity,
+				errorQuantity: inputData[0].inputErrorQuantity
+			},
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(resData){
+				toastr.success(resData);
+			},
+			error: function(error){
+				toastr.error('실적 저장 실패: 알 수 없는 에러 발생');
+			}
+		});
+	}
+	//작업 종료 프로세스
+	function endPerf(){
+		/*
+		실적코드를 기반으로 실적관리DB의 해당 정보의 실질적 투입량을 최신화하고, 관련 작업 진행 현황DB의 정보 속 투입량도 최신화한다.
+		=> 미생산량을 체크하여 투입량에 반영하는 작업
+		*/
+		
+		if(perfCode == null){
+			toastr.warning('종료 할 실적이 없습니다.');
+			return;
+		}
+		
+		let inputData = gridMainInput.getData();
+		
+		$.ajax({
+			url:'/savePerf/' + perfCode,
+			method: 'PUT',
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(resData){
+				toastr.success(resData);
+			},
+			error: function(error){
+				toastr.error('실적 저장 실패: 알 수 없는 에러 발생');
+			}
+		});
+	}
+	//작업 시작 폼 생성
+	function createNewPerfForm(){
+		let result;
+		
+		$.ajax({
+			url: '/newPerf',
+			method: 'GET',
+			data: {
+				empCode: empCode,
+				facCode: facCode,
+				workProgressCode: workProgressCode
+			},
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(resData){
+				resData != null ? result = resData : toastr.error('조회된 실적 등록 가능 사전 정보가 없습니다.');	
+			},
+			error: function(error){
+				toastr.error('공정 목록 정보 불러오기 실패: 알 수 없는 에러 발생');
+			}
+		});
+		
+		result.inputQuantity = inputQuantity;
+		result.errorQuantity = '0';
+		result.prodQuantity = '0';
+		result.producedQuantity = '0';
+		result.unproducedQuantity = '0';
+		return result;
+	}
+	//작업 시작 정보 등록
+	function createNewPerfData(){
+		let result;
+		$.ajax({
+			url: '/newPerf',
+			method: 'POST',
+			data: {
+				empCode: empCode,
+				facCode: facCode,
+				workProgressCode: workProgressCode,
+				inputQuantity: inputQuantity
+			},
+			beforeSend : function(xhr) {
+	            xhr.setRequestHeader(header, token);
+	        },
+			async: false,
+			success: function(resData){
+				if(resData != null){
+					result = resData;
+				} else {
+					toastr.error('등록된 실적 정보 불러오기 실패: 알 수 없는 오류 발생');
+				}
+			},
+			error: function(error){
+				toastr.error('실적 정보 등록 실패: 알 수 없는 에러 발생');
+			}
+		});
+		toastr.success(result.p_output_msg);
+	
+		perfCode = result.p_output_perf_code;
+		workProgressCode = result.p_work_progress_code;
+		empCode = result.p_emp_code;
+		facCode = result.p_fac_code;
+				
+		let newPerfData = searchPerfData();
+		
+		gridMainTop.resetData(newPerfData != null ? newPerfData : []);
+		initgridInputData();
+	}
+</script>
+</html>

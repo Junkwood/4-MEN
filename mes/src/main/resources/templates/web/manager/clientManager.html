@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<link rel="stylesheet"
+	href="https://uicdn.toast.com/grid/latest/tui-grid.css" />
+<script src="https://uicdn.toast.com/grid/latest/tui-grid.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.js"
+	integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+	crossorigin="anonymous"></script>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+<style>
+     .search-container {
+        display: flex;
+        justify-content: space-between; 
+        align-items: center; 
+        gap: 10px; 
+    }
+    .input-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 50%; 
+    }
+    .input-group select,
+    .input-group input[type="text"] {
+        width: calc(33.33% - 20px);
+    }
+    .button-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+	<div>
+		<form name="search-form" autocomplete="off" onsubmit="return false;">
+			<h3 style="margin-top: 50px; font-weight: bold; margin-bottom: 20px;">거래처 관리</h3>
+
+			<div class="search-container">
+				<div class="input-group">
+					<select class="form-select order-select" aria-label="Default select example" name="type">
+						<option selected value="clientName">거래처명</option>
+						<option value="clientManager">대표자명</option>
+					</select> 
+					<input class="form-control me-2 order-search" type="text" name="keyword">
+					<input type='button' class="btn btn-outline-primary" value="검색" onclick="getSearchList()">
+				</div>
+				<div class="button-group">
+					<input type='button' class="btn btn-outline-success" value="등록" id="appendBtn"> 
+					<input type='button' class="btn btn-outline-info" value="저장" id="saveBtn"> 
+					<input type='button' class="btn btn-outline-danger" value="삭제" id="delBtn">
+				</div>
+			</div>
+		</form>
+	</div>	
+	<h3 style="margin-top: 50px;"></h3>
+	<div class="row">
+		<div class="col-12" style="margin-bottom: 50px">
+			<div id="grid"></div>
+		</div>
+	</div>
+	<div id="pagination" class="tui-pagination"></div>
+</div>
+
+<script th:inline="javascript">
+const token = $("meta[name='_csrf']").attr("content")
+const header = $("meta[name='_csrf_header']").attr("content");
+
+let cList = [];
+toastr.options.positionClass = "toast-top-center";
+let clientList = [[${clientList}]]; 
+const grid = new tui.Grid({
+    el: document.getElementById('grid'),
+    data: clientList, 
+    scrollX: true,
+    scrollY: true,
+    rowHeaders: ['checkbox'],
+    pageOptions: { useClient: true, perPage: 10 },
+    columns: [
+        { header: '거래처코드', name: 'clientCode' , align: 'center'},
+        { header: '거래처이름', name: 'clientName' ,editor : 'text' , align: 'center'},
+        { header: '거래처유형', name: 'clientType' ,editor : 'text' , align: 'center',
+            formatter: 'listItemText',
+            editor: {
+                type: 'select',
+                options: {
+                  listItems: cList
+          },
+            }},
+        { header: '대표자명', name: 'clientManager' ,editor : 'text' , align: 'center'},
+        { header: '연락처', name: 'tel' ,editor : 'text' , align: 'center'},
+        { header: '주소', name: 'address' ,editor : 'text' , align: 'center'},
+    ]
+});
+
+
+function getSearchList() {
+    $.ajax({
+        type: 'get',
+        url: '/admin/clientGetSearchList',
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        data: $("form[name=search-form]").serialize(),
+        success: function(result) {
+            if (result.length > 0) {
+                grid.resetData(result); // 그리드에 데이터를 넣음
+            } else {
+                grid.clear(); // 그리드 데이터 비움
+            }
+        }
+    });
+}   
+
+const appendBtn = document.getElementById('appendBtn');
+appendBtn.addEventListener('click', () => {
+    let data = {
+        clientName: '',
+        clientType: '',
+        tel: '',
+        address: '',
+        client_manager: '',
+    };
+    grid.appendRow(data);
+    grid.refreshLayout();
+});
+
+
+const delBtn = document.getElementById('delBtn');
+delBtn.addEventListener('click', () => {
+    let check = grid.getCheckedRows(); //체크된 행의 갯수를 가져옴
+    if (check.length > 0) {
+        $.ajax({
+            type: 'DELETE',
+            url: '/admin/client',
+            contentType: 'application/json',
+            beforeSend : function(xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+            data: JSON.stringify(check),
+            success: function(response) {
+                if (response === "삭제완료") {
+                    toastr.success('삭제되었습니다.');
+                    grid.removeCheckedRows();
+                } else {
+                    toastr.error('삭제할 수 없는 거래처입니다. 문의하세요');
+                }
+            }
+        });
+    } else {
+        toastr.warning('삭제할 행을 선택하세요.');
+    }
+});
+
+const saveBtn = document.getElementById('saveBtn');
+saveBtn.addEventListener('click', () => {
+    let changes = grid.getModifiedRows();
+    let valid = true;
+
+    changes.createdRows.forEach(row => {
+        if (!row.clientName || row.clientName.trim() === "") {
+            toastr.error('거래처명을 입력 후 엔터를 쳐주세요.');
+            valid = false;
+            return;
+        }
+    });
+
+    if (!valid) {
+        return;
+    }
+
+    if (changes.createdRows.length >= 1) {
+        $.ajax({
+            type: 'POST',
+            url: '/admin/client',
+            contentType: 'application/json',
+            beforeSend : function(xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+            data: JSON.stringify(changes.createdRows),
+            success: function(response) {
+                toastr.success('등록되었습니다.');
+            }
+        });
+    } else if (changes.updatedRows.length > 0) {
+        $.ajax({
+            type: 'PUT',
+            url: '/admin/client',
+            contentType: 'application/json',
+            beforeSend : function(xhr) {
+                xhr.setRequestHeader(header, token);
+            },
+            data: JSON.stringify(changes.updatedRows),
+            success: function(response) {
+                if (response) {
+                    toastr.success('수정되었습니다.');
+                    grid.resetOriginData(response);
+                } else {
+                    toastr.error('저장 실패');
+                }
+            }
+        });
+    }
+});
+
+document.querySelector('form[name="search-form"]').addEventListener('submit', (e) => {
+    e.preventDefault(); // 기본 폼 제출 동작 방지
+    getSearchList(); // 검색 함수 호출
+});
+
+function clientOptions() {
+    $.ajax({
+        url: "/admin/clientOptionList",
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        method: "GET",
+        success: function(result) {
+            result.forEach(code => {
+                cList.push({
+                    text: code.subCodeName,
+                    value: code.subCode
+                });
+            });
+            grid.setColumns([
+            	{ header: '거래처코드', name: 'clientCode' , align: 'center'},
+                { header: '거래처이름', name: 'clientName' ,editor : 'text' , align: 'center'},
+                { header: '거래처유형', name: 'clientType' ,editor : 'text' , align: 'center',
+                    formatter: 'listItemText',
+                    editor: {
+                        type: 'select',
+                        options: {
+                          listItems: cList
+                  },
+                    }},
+                { header: '대표자명', name: 'clientManager' ,editor : 'text' , align: 'center'},
+                { header: '연락처', name: 'tel' ,editor : 'text' , align: 'center'},
+                { header: '주소', name: 'address' ,editor : 'text' , align: 'center'},
+            ]);
+            grid.resetData(clientList); 
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+clientOptions();
+$('.tui-grid-body-container').css("cursor","pointer")
+</script>
+</body>
+</html>

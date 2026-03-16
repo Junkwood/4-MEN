@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+<meta name="description" content="" />
+<meta name="author" content="" />
+
+<title>Dashboard - SB Admin</title>
+<link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
+<link th:href="@{/css/styles.css}" rel="stylesheet" />
+<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.js"
+	integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+	crossorigin="anonymous"></script>
+	
+<!-- CSS only -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+<!-- toast ui cdn -->
+<link rel="stylesheet" href="https://uicdn.toast.com/grid/latest/tui-grid.css" />
+<link
+      rel="stylesheet"
+      type="text/css"
+      href="https://uicdn.toast.com/tui.time-picker/v2.0.3/tui-time-picker.css"
+    />
+    <link 
+      rel="stylesheet"
+      type="text/css" 
+      href="https://uicdn.toast.com/tui.date-picker/v4.1.0/tui-date-picker.css"
+    />
+<script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+<script src="https://uicdn.toast.com/tui.time-picker/v2.0.3/tui-time-picker.js"></script>
+<script src="https://uicdn.toast.com/tui.date-picker/v4.1.0/tui-date-picker.js"></script>
+<!-- 페이지네이션 cdn -->
+<link rel="stylesheet" href="https://uicdn.toast.com/tui.pagination/latest/tui-pagination.css" />
+<script src="https://uicdn.toast.com/tui.pagination/latest/tui-pagination.js"></script>
+<script src="https://uicdn.toast.com/chart/latest/toastui-chart.min.js"></script>
+<link rel="stylesheet" href="https://uicdn.toast.com/chart/latest/toastui-chart.min.css" />
+<script src="https://uicdn.toast.com/grid/latest/tui-grid.js"></script>
+<!-- 결과값 반환 cdn -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <head>
+    <link th:href="@{/css/order.css}" rel="stylesheet">
+    <!-- csrf 토큰번호 -->
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/> 
+    <style>
+       .btn-lg {
+          height: 300px;
+          width: 400px;
+          margin-right:40px;
+          margin-top: 50px;
+        }
+        .tui-grid-cell.selected-row {
+        background-color: #FFD700 !important; 
+        }
+       
+    </style>
+  </head>
+  
+    <br>
+    <div class="bg-primary" style="text-align: right;">
+      <button type="button" id="go-back" style="background-color:transparent; border:none;">
+        <img th:src="@{/images/backward.png}" alt="뒤로가기" onClick="history.go(-1)">
+      </button>
+      <button type="button" id="go-home" style="background-color:transparent; border:none;">
+        <img th:src="@{/images/home.png}" alt="홈으로" onClick="location.href='/'" >
+      </button>
+    </div>
+  
+  
+   <div>
+    <br>
+    <div class="row">
+    <div class="col-6">
+    <h2 style="font-size: xx-large; font-weight: bold;">작업자선택</h2>
+      <select class="form-select-lg" name="rank" id="rank">
+    	<option value="" selected>직급</option>
+    	<option th:each="facility : ${rank}" th:value="${facility.rank}" th:text="${facility.rank}"></option>
+	  </select>
+      <select class="form-select-lg" name="department" id="department">
+   			 <option value="" selected>소속부서</option>
+    		<option th:each="facility : ${user}" th:value="${facility.deptId}" th:text="${facility.deptId}"></option>
+	  </select>
+      </div>
+      <div class="col-6">
+       <h2 style="font-size: xx-large; font-weight: bold;">설비 선택</h2>
+      <select class="form-select-lg" th:name="reason" id="reason">
+        <option value="" selected>설비상태</option>
+       <option th:each="facility : ${noReason}" th:value="${facility.subCode}" th:text="${facility.subCodeName}"></option>
+      </select>
+      <select class="form-select-lg" name="status" id="status">
+        <option value="" selected>설비구분</option>
+         <option th:each="facility : ${status}" th:value="${facility.subCode}" th:text="${facility.subCodeName}"></option>
+      </select>
+      </div>
+    </div>
+   </div>
+   <div class="col-12">
+    <br>
+  </div>
+   <div class="row"><!--작업지시 목록불러오기-->
+      <div class="col-4">
+         <div id="grid1"></div>
+    </div>
+    <div class="col-8">
+         <div id="grid2"></div>
+    </div>
+  </div>
+
+         <div id="grid"></div>
+  <div id="content" class="center-block" style="text-align: center;">
+	  <button type="button" id="stopBtn" class="btn btn-danger btn-lg"style="font-size: 80px;">정지</button>
+	  <button type="button" id="startBtn" class="btn btn-primary btn-lg"style="font-size: 80px;">작동</button>
+	</div>  
+
+<div class="modal fade" id="Dispatch-Number-Modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl"> <!-- modal-xl 클래스 추가 -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-4 order-search-title textInline" id="exampleModalLabel">비가동사유기입</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-12">
+                        <div id="grid3"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script th:inline="javascript">
+//csrf 토큰 넣을 값 가져오기
+const token = $("meta[name='_csrf']").attr("content")
+const header = $("meta[name='_csrf_header']").attr("content");
+      //작업지시상세등록 테이블        
+const grid1 = new tui.Grid({
+      el: document.getElementById('grid1'),
+      scrollX: false,
+      scrollY: true,
+      bodyHeight: 300,
+      rowHeight: 70,
+      rowHeaders: [
+    	    { type: 'rowNum', align: 'center'},
+    	  ],
+      columns: [
+        {
+          header: '사원번호',
+          name: 'empCode'
+        },
+        {
+          header: '사원이름',
+          name: 'empName'
+        },
+        {
+          header: '소속부서',
+          name: 'deptId'
+        },
+        {
+          header: '직급',
+          name: 'rank'
+        },
+        
+      ]
+});
+    //작업지시상세등록 테이블        
+const grid2 = new tui.Grid({
+      el: document.getElementById('grid2'),
+      scrollX: false,
+      scrollY: true,
+      bodyHeight: 300,
+      rowHeight: 70,
+      rowHeaders: [
+  	    { type: 'rowNum', align: 'center'},
+  	  ],
+      columns: [
+    	  {header:'비가동코드',
+    	   name: 'facNotCode'  
+    	  },
+    	{
+    	  header:'설비코드',
+    	  name:'facCode'
+    	},
+        {
+          header: '설비명',
+          name: 'facName',
+        },
+        {
+          header: '설비구분코드',
+          name: 'facClassCode'
+        },
+        {
+          header: '설비구분',
+          name: 'facClassName'
+        },
+        {
+          header: '설비상태코드',
+          name: 'facStatus'
+        },
+        {
+          header: '설비상태',
+          name: 'facStatusName',
+          align:'center',
+          renderer:{
+        	  styles:{
+        		  backgroundColor:(props) => props.value == '사용가능'?  'rgba(252, 240, 3)' 
+        		  : props.value == '사용불가'?  'rgba(252, 3, 45)' 	  
+        		  : props.value == '사용중'?  'rgba(3, 252, 65)':'',
+        		 fontSize :'14px',
+        		 fontFamily: 'Malgun Gothic',
+        		 fontWeight: 'bold'
+        	  }
+          }
+        },
+        {
+          header: '비가동 사유코드',
+          name: 'facNotReasonCode'
+        },
+        {
+          header: '비가동 사유',
+          name: 'facNotReasonName',
+        },
+        {
+          header:'사원코드',
+          name:'empCode'
+        },
+        {
+          header: '작업자',
+          name: 'empName'
+        },
+        {
+          header: '비가동 시작일자',
+          name: 'notStartDate'
+        },
+        {
+          header: '비가동 종료일자',
+          name: 'notEndDate'
+        },
+        
+      ]
+    });
+const grid3 = new tui.Grid({
+       el: document.getElementById('grid3'),
+       scrollX: false,
+       scrollY: true,
+       rowHeight: 70,
+       columns: [
+          {
+            header: '비가동사유',
+            name: 'subCodeName'
+          },
+          {
+            header: '비가동사유',
+            name: 'subCode'
+          },
+        ]
+});
+//grid2 숨기기
+grid2.hideColumn("facClassCode"); 
+grid2.hideColumn("facNotReasonCode"); 
+grid2.hideColumn("empCode"); 
+grid2.hideColumn("facStatus"); 
+//grid2.hideColumn("facCode");
+grid2.hideColumn("empName");
+grid2.hideColumn("facNotCode");
+grid3.hideColumn("subCode");
+      function ajaxEmpList(rank='',deptId=''){
+ 		 $.ajax({
+ 		        url: "/work/empDisplay",
+ 		        method: "GET",
+ 		        data: {
+ 		        	rank: rank,
+ 		        	deptId: deptId,
+ 		        },
+ 		       beforeSend : function(xhr) {
+ 		            xhr.setRequestHeader(header, token);
+ 		        },
+ 		        success: function(result) {
+ 		            grid1.resetData(result);
+ 		            grid1.refreshLayout();
+ 		        },
+ 		        error: function(error) {
+ 		            console.error('AJAX 요청 실패:', error);
+ 		        }
+ 		    });
+ 	}
+      function ajaxFacList(facStatus='',facClassCode=''){
+  		 $.ajax({
+  		        url: "/work/facDisplay",
+  		        method: "GET",
+  		        data: {
+  		        	facStatus: facStatus,
+  		        	facClassCode: facClassCode,
+  		        },
+  		      beforeSend : function(xhr) {
+  	            xhr.setRequestHeader(header, token);
+  	        },
+  		        success: function(result) {
+  		            grid2.resetData(result);
+  		            grid2.refreshLayout();
+  		        },
+  		        error: function(error) {
+  		            console.error('AJAX 요청 실패:', error);
+  		        }
+  		    });
+  	}
+    $(function() {
+    	ajaxEmpList();
+    	ajaxFacList();
+    });
+    
+    
+  //그리드 호버
+    tui.Grid.applyTheme('default', {
+    	row:{
+    			hover:{
+    					background:'#2E9AFE'
+    			}
+    	}
+    })
+    // select 요소 변경 이벤트에 대한 이벤트 리스너 추가
+$('#rank, #department').change(function() {
+    // 새로운 값 가져오기
+    let selectedRank = $('#rank').val();
+    let selectedDepartment = $('#department').val();
+    
+    // AJAX 호출하여 데이터 업데이트
+    ajaxEmpList(selectedRank, selectedDepartment);
+});
+
+// select 요소 변경 이벤트에 대한 이벤트 리스너 추가
+$('#reason, #status').change(function() {
+    // 새로운 값 가져오기
+    let selectedReason = $('#reason').val();
+    let selectedStatus = $('#status').val();
+    // AJAX 호출하여 데이터 업데이트
+    ajaxFacList(selectedReason,selectedStatus);
+});
+//행 클릭 시 색상 고정
+	let grid1SelectedRowKey = null;
+	let grid2SelectedRowKey = null;
+	let grid1RowKey=-1
+	let grid2RowKey=-1
+//그리드1클릭
+grid1.on('click', (ev) => {
+	if (ev.targetType == 'cell') {
+		grid1RowKey = ev.rowKey;
+	   if (grid1SelectedRowKey !== null) {
+   			  grid1.removeRowClassName(grid1SelectedRowKey, 'selected-row');
+  		  }
+	   grid1SelectedRowKey = grid1RowKey;
+ 			  grid1.addRowClassName(grid1RowKey, 'selected-row');
+	  }	
+	});
+//그리드 2클릭
+grid2.on('click', (ev) => {
+	if (ev.targetType == 'cell') {
+		grid2RowKey = ev.rowKey;
+		//만약 키값이 있으면 그클래스를 지워서 색깔은 지운다.
+	      if (grid2SelectedRowKey !== null) {
+ 			  grid2.removeRowClassName(grid2SelectedRowKey, 'selected-row');
+		    }
+		//색깔 입히기
+	      grid2SelectedRowKey = grid2RowKey;
+			  grid2.addRowClassName(grid2RowKey, 'selected-row');
+	  }
+	});
+//비가동 클릭
+$('#stopBtn').on('click',function(){
+     let grid2Start= grid2.getValue(grid2RowKey,'notStartDate')
+     let grid2End = grid2.getValue(grid2RowKey,'notEndDate')
+     let grid2Status = grid2.getValue(grid2RowKey,'facStatusName')
+     //만약 시작값은 있고 종료시간은 없으면 비가동 처리된 상품이니 클릭못한다.
+     if (grid2Start !== null && grid2Start.length > 1 && (grid2End === null || grid2End.length === 0)) {
+    	    toastr.error('현재 비가동처리된 설비입니다.');
+    	    return;
+    	}
+   //사용중인 설비는 못건드는 vaildation
+     if(grid2Status =='사용중'){
+    	 toastr.error('이미 사용중인 설비입니다.')
+    	 return;
+     }
+     //사용자가 클릭 안했을시 기본값이 -1이니 선택을 안했고 그럼 선택을 유도한다.
+	 if(grid1RowKey==-1){
+		 toastr.error('작업자를 선택하세요')
+	     return;
+	 }
+     //설비를 클릭안했을때의 validation
+	 if(grid2RowKey==-1){
+		 toastr.error('설비를 선택하세요')
+	     return;
+	 }
+     //if문에 조건이 다 안걸렸을시 실행되는 ajax
+	 $('#Dispatch-Number-Modal').on('shown.bs.modal', function () {
+		 ajaxNoReason();
+	  }).modal('show');
+})
+//비사유코드 모달띄우기
+function ajaxNoReason() {
+    $.ajax({
+        url: "/work/noReasonList",
+        method: "GET",
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+            grid3.refreshLayout();
+            grid3.resetData(result)
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+//모달창에서 클릭시 실행되는 이벤트
+grid3.on('click',function(ev){
+	if (ev.targetType == 'cell') {
+		let grid1EmpCode = grid1.getValue(grid1RowKey,'empCode')
+		grid2.setValue(grid2RowKey,'empCode',grid1EmpCode);
+		let grid3noReason = grid3.getValue(ev.rowKey,'subCode');
+		grid2.setValue(grid2RowKey,'facNotReasonCode',grid3noReason);
+		
+		ajaxStart();
+	}
+	
+})
+function ajaxStart(){
+	const changes = grid2.getModifiedRows();
+	$.ajax({
+        url: "/work/noAdd",
+        method: "post",
+        data : JSON.stringify(changes.updatedRows),
+        contentType: 'application/json',
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+            $('#Dispatch-Number-Modal').modal('hide');
+            toastr.success('정상적으로 등록되었습니다.')
+            ajaxFacList();
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+//작동
+$('#startBtn').on('click',function(){
+    let grid2Start= grid2.getValue(grid2RowKey,'notStartDate')
+    let grid2End = grid2.getValue(grid2RowKey,'notEndDate')
+    let facNotCode = grid2.getValue(grid2RowKey,'facNotCode')
+    let facCode = grid2.getValue(grid2RowKey,'facCode')
+    let grid2Status = grid2.getValue(grid2RowKey,'facStatusName')
+    let facNotReasonName = grid2.getValue(grid2RowKey,'facNotReasonName')
+    //설비를 클릭안했을때의 validation
+	 if(grid2RowKey==-1){
+		 toastr.error('설비를 선택하세요')
+	     return;
+	 }
+    //사용중인 설비는 못건드는 vaildation
+    if(grid2Status =='사용중'){
+   	 toastr.error('이미 사용중인 설비입니다.')
+      return;
+    }
+    //가동중인 설비를 클릭시 실행되는 validation.
+    if (grid2End != null) {
+   	    toastr.error('이미 가동상태인 설비입니다.');
+   	    return;
+   	}
+    if(facNotReasonName=='점검대기'){
+    	toastr.error('점검대기는 설비 담당자에게 문의하세요')
+    	return;
+    }
+    if(facNotReasonName=='수리대기'){
+    	toastr.error('수리대기는 설비 담당자에게 문의하세요')
+    	return;
+    }
+   
+    
+	  $.ajax({
+	        url: "/work/noEnd",
+	        method: "post",
+	        data : {facNotCode : facNotCode,
+	        	    facCode : facCode}, 
+	       beforeSend : function(xhr) {
+	                    xhr.setRequestHeader(header, token);
+	        },
+	        success: function(result) {
+	            toastr.success('정상적으로 등록되었습니다.')
+	            ajaxFacList();
+	        },
+	        error: function(error) {
+	            console.error('AJAX 요청 실패:', error);
+	        }
+	    });
+})
+   </script>
+</html>

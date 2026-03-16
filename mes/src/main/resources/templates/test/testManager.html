@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+    xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{common/layouts/default_layout}"
+    layout:fragment="Content">
+<head>
+<link rel="stylesheet"
+    href="https://uicdn.toast.com/grid/latest/tui-grid.css" />
+<script src="https://uicdn.toast.com/grid/latest/tui-grid.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.js"
+    integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+    crossorigin="anonymous"></script>
+<head>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+<style>
+    .search-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px; 
+    }
+    .input-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 50%; 
+    }
+    .input-group select,
+    .input-group input[type="text"] {
+        width: calc(33.33% - 20px);
+    }
+    .button-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div>
+            <form name="search-form" autocomplete="off" onsubmit="return false;">
+                <h3 style="margin-top: 50px; font-weight: bold; margin-bottom: 20px;">검사 기준 관리</h3>
+
+                <div class="search-container">
+                    <div class="input-group">
+                        <select class="form-select order-select"
+                            aria-label="Default select example" name="type">
+                            <option selected value="testName">검사명</option>
+                            <option value="testItemUnit">검사항목</option>
+                        </select> 
+                        <input class="form-control me-2 order-search" type="text" name="keyword">
+                        <input type='button' class="btn btn-outline-primary" value="검색" onclick="getSearchList()">
+                    </div>
+                    <div class="button-group">
+                        <input type='button' class="btn btn-outline-success" value="등록" id="appendBtn"> 
+                        <input type='button' class="btn btn-outline-info" value="저장" id="saveBtn"> 
+                        <input type='button' class="btn btn-outline-danger" value="삭제" id="delBtn">
+                    </div>
+                </div>
+            </form>
+        </div>
+<div class="row">
+<h3 style="margin-top: 50px;">
+</h3>
+        <div class="col-12" style="margin-bottom: 50px">
+            <div id="grid"></div>
+        </div>
+    </div>
+    </div>
+
+    <script th:inline="javascript">
+    const token = $("meta[name='_csrf']").attr("content")
+    const header = $("meta[name='_csrf_header']").attr("content");
+        toastr.options.positionClass = "toast-top-center";
+        let testList = [[${testList}]]; 
+        const grid = new tui.Grid({
+            el: document.getElementById('grid'),
+            data: testList, 
+            scrollX: true,
+            scrollY: true,
+            rowHeaders: ['checkbox'],
+            pageOptions: { useClient: true, perPage: 10 },
+            columns: [
+                { header: '검사코드', name: 'testCode' ,align:'center' },
+                { header: '검사항목', name: 'testName' ,editor : 'text' ,align:'center'},
+                { header: '단위', name: 'testItemUnit' ,editor : 'text' ,align:'center'},
+                { header: '비고', name: 'note' , editor : 'text' ,align:'center'},
+            ]
+        });
+
+        const appendBtn = document.getElementById('appendBtn');
+        appendBtn.addEventListener('click', () => {
+               let newRow = {
+                               testName: '',
+                               testItemunit: '',
+                               note: ''}
+               console.log("새로운 행 : ", + newRow);
+
+               grid.appendRow(newRow);
+               grid.refreshLayout();
+               toastr.success('행이 추가되었습니다.');
+       });
+     
+        const delBtn = document.getElementById('delBtn');
+        delBtn.addEventListener('click', () => {
+            let check = grid.getCheckedRows(); //체크된 행의 갯수를 가져옴
+            if (check.length > 0) {
+                $.ajax({
+                    type: 'DELETE',
+                    beforeSend : function(xhr) {
+                        xhr.setRequestHeader(header, token);
+                    },
+                    url: '/test/test',
+                    contentType: 'application/json',
+                    data: JSON.stringify(check),
+                    success: function(response) {
+                        if (response === "삭제완료") {
+                            toastr.success('삭제되었습니다.');
+                            grid.removeCheckedRows();
+                        } else {
+                            toastr.error('삭제 실패');
+                        }
+                    }
+                });
+            } else {
+                toastr.warning('삭제할 행을 선택하세요.');
+            }
+        });
+
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.addEventListener('click', () => {
+            let changes = grid.getModifiedRows();
+            let valid = true;
+
+            changes.createdRows.forEach(row => {
+                if (!row.testName || row.testName.trim() === "") {
+                    toastr.error('거래처명을 입력 후 엔터를 쳐주세요.');
+                    valid = false;
+                    return;
+                }
+                if (!row.testItemUnit || row.testItemUnit.trim() === "") {
+                    toastr.error('거래처 유형을 입력 후 엔터를 쳐주세요.');
+                    valid = false;
+                    return;
+                }
+
+            });
+
+            if (!valid) {
+                return;
+            }
+
+            if (changes.createdRows.length >= 1) {
+                $.ajax({
+                    type: 'POST',
+                    beforeSend : function(xhr) {
+                        xhr.setRequestHeader(header, token);
+                    },
+                    url: '/test/test',
+                    contentType: 'application/json',
+                    data: JSON.stringify(changes.createdRows),
+                    success: function(response) {
+                        toastr.success('등록되었습니다.');
+                    }
+                });
+            } else if (changes.updatedRows.length > 0) {
+                $.ajax({
+                    type: 'PUT',
+                    beforeSend : function(xhr) {
+                        xhr.setRequestHeader(header, token);
+                    },
+                    url: '/test/test',
+                    contentType: 'application/json',
+                    data: JSON.stringify(changes.updatedRows),
+                    success: function(response) {
+                        if (response) {
+                            toastr.success('수정되었습니다.');
+                            grid.resetOriginData(response);
+                        } else {
+                            toastr.error('저장 실패');
+                        }
+                    }
+                });
+            }
+        });
+
+        function getSearchList() {
+            $.ajax({
+                type: 'get',
+                beforeSend : function(xhr) {
+                    xhr.setRequestHeader(header, token);
+                },
+                url: '/test/testGetSearchList',
+                data: $("form[name=search-form]").serialize(),
+                success: function(result) {
+                    if (result.length > 0) {
+                        grid.resetData(result);
+                    } else {
+                        grid.clear();
+                    }
+                }
+            });
+        }
+
+        document.querySelector('form[name="search-form"]').addEventListener('submit', (e) => {
+            e.preventDefault(); // 기본 폼 제출 동작 방지
+            getSearchList(); // 검색 함수 호출
+        });
+        
+        
+        $('.tui-grid-body-container').css("cursor","pointer")
+    </script>
+</body>
+</html>

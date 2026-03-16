@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+  <style>
+      body{
+        background-color: #FAFAFA;
+      }
+      .rightBtn{
+          margin-top:50px;
+      }
+      .col-5 {
+            margin-top:100px;
+            margin-right:95px;
+            margin-left:2px;
+            background-color: #E0ECF8;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            padding-bottom:30px;
+        }
+    
+  </style>
+  </head>
+<body>
+    <div class="container">
+		   <div class="row orderCallTable">
+			   <div class="col-5">
+			      <h1 class="fw-bold py-1 mb-4">
+					<span class="text-muted fw-light">공통코드</span> 
+		   		  </h1>
+				    <div id="grid1"></div>
+			   </div>
+			   <div class="col-5">
+			   <div class="float-start">
+				 <h1 class="fw-bold py-1 mb-4">
+					<span class="text-muted fw-light">상세코드</span> 
+		   		  </h1>
+				</div>
+			<div class="float-end rightBtn">
+				<input type='button' class="btn btn-outline-primary" value="저장" id="saveBtn">
+				<input type='button' class="btn btn-outline-success" id="plusBtn" value="╆">
+	            <input type='button' class="btn btn-outline-danger" id="minusBtn" value="ㅡ">
+			</div>
+					 <div id="grid2"></div>
+				</div>
+			</div>
+			
+			<div class="row orderCallTable">	  
+				
+			</div>
+	</div>
+	<!-- 모달창 -->
+<div class="modal fade" id="Sucess-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">등록 완료</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: center;">
+          <img src="/images/smileImg.png" width="200" alt="Smile Image">
+          <h3 style="margin-top: 20px; font-family: 'Noto Sans KR', sans-serif;">등록이 완료되었습니다.</h3>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-success" id="nextLevel">등록 완료</button>
+      </div>
+    </div>
+  </div>
+</div>
+	<script th:inline="javascript">
+//csrf 토큰 넣을 값 가져오기
+const token = $("meta[name='_csrf']").attr("content")
+const header = $("meta[name='_csrf_header']").attr("content");
+const name = $("#userName").val();
+	//주문 단건 창
+    const grid1 = new tui.Grid({
+        el: document.getElementById('grid1'),
+        scrollX: false,
+        scrollY: true,
+        bodyHeight: 450,
+        rowHeaders: [
+    	    { type: 'rowNum', align: 'center'},
+    	  ],
+        columns: [
+            { header: '공통코드', name:'mainCode', align:'center'},
+            { header: '코드명', name:'mainCodeName', align:'center'},
+        ],
+    });
+	
+    const grid2 = new tui.Grid({
+        el: document.getElementById('grid2'),
+        scrollX: false,
+        scrollY: false,
+        bodyHeight: 450,
+        rowHeaders: [
+        	'checkbox',
+    	    { type: 'rowNum', align: 'center'},
+    	  ],
+        columns: [
+        	{ header: '주코드', name:'mainCode', align:'center'},
+            { header: '상세코드', name:'subCode', align:'center'},
+            { header: '상세코드명', name:'subCodeName', align:'center',editor: 'text'},
+        ],
+    });
+    function mainCodeList(){
+    	 $.ajax({
+		        url: "/admin/mainCodeDisplay",
+		        method: "GET",
+		        beforeSend : function(xhr) {
+		            xhr.setRequestHeader(header, token);
+		        },
+		        success: function(result) {
+		            grid1.resetData(result);
+		            grid1.refreshLayout();
+		        },
+		        error: function(error) {
+		            console.error('AJAX 요청 실패:', error);
+		        }
+		    });
+    }
+  //그리드1클릭
+  let gridCount=-1;
+    grid1.on('click', (ev) => {
+    	if (ev.targetType == 'cell') {
+    		 gridCount = ev.rowKey
+    		 let mainCode = grid1.getValue(ev.rowKey,'mainCode');
+    		 $.ajax({
+ 		        url: "/admin/subCodeDisplay",
+ 		        method: "GET",
+ 		        data:{
+ 		        	mainCode : mainCode
+ 		        },
+ 		       beforeSend : function(xhr) {
+ 		            xhr.setRequestHeader(header, token);
+ 		        },
+ 		        success: function(result) {
+ 		            grid2.resetData(result);
+ 		            grid2.refreshLayout();
+ 		        },
+ 		        error: function(error) {
+ 		            console.error('AJAX 요청 실패:', error);
+ 		        }
+ 		    });
+    	  }	
+    	});
+    mainCodeList();
+    //+버튼누를스 행증가
+    $('#plusBtn').on('click', function(ev) {
+    	let grid2RowCount = grid2.getRowCount();
+    	let mainCode = grid1.getValue(gridCount,'mainCode')
+    	
+		if(gridCount==-1){
+			toastr.error('메인코드를 선택후 사용하세요')
+		    return;
+		}
+    	
+    	//미리행을 추가
+		grid2.appendRow();
+		//추가하고 데이터를 가져옴
+		let grid2Data = grid2.getData();
+		//그데이터 rowkey를 가져옴
+		let maxRowKey = grid2Data[grid2Data.length-1].rowKey;
+		//실질적으로 넣을 값을 가져옴
+		let rowCount = grid2.getData().length.toString();
+		//rowkey가져온값에 줄행수마다 procNum에 값을 집어넣음
+		grid2.setValue(maxRowKey, 'mainCode', mainCode);
+		grid2.setValue(maxRowKey,'subCode',mainCode+rowCount);
+	});
+  //-버튼클릭시 주문상세행 제거
+    $('#minusBtn').on('click', function(ev){
+    	//선택한 메인코드 가져오기
+    	let mainCode = grid1.getValue(gridCount,'mainCode')
+        
+    	let selectedRows = grid2.getCheckedRows();
+        if(selectedRows.length > 0){
+            for(let i = selectedRows.length - 1; i >= 0; i--){
+            	console.log(selectedRows[i])
+                grid2.removeRow(selectedRows[i].rowKey);
+            }
+        } else {
+            toastr.error('선택된 행이 없습니다.');
+        }
+    });
+  //등록
+    $('#saveBtn').on('click',function(ev){
+		let rowCount = grid2.getRowCount();
+		const changes = grid2.getModifiedRows();
+		let valid = true;
+		changes.createdRows.forEach(row => {
+			if(!row.subCode || row.subCode.trim() ===""){
+				toastr.error('부코드를입력하세요')
+				valid=false;
+				return;
+			}
+			if(!row.subCodeName || row.subCodeName.trim() ===""){
+				toastr.error('부코드명을 입력하세요')
+				valid=false;
+				return;
+			}
+			
+	})
+		changes.updatedRows.forEach(row => {
+			if(!row.subCode || row.subCode.trim() ===""){
+				toastr.error('부코드를 입력하세요')
+				valid=false;
+				return;
+			}
+			if(!row.subCodeName || row.subCodeName.trim() ===""){
+				toastr.error('부코드명을 입력하세요')
+				valid=false;
+				return;
+			}
+		})
+		if(!valid){
+			return;
+		}
+		for(i=0;i<rowCount;i++){
+	     let gridData = grid2.getData();
+		 let subCodeCheck = grid2.getData()[i].subCode
+		   let result = gridData.filter(param => param.subCode===subCodeCheck);
+		   if(result.length>1){
+			   toastr.error('상세코드 2번이상중복됩니다.')
+			   return;
+		   }
+		}	
+		
+		
+			$.ajax({
+		        url: "/admin/subCodeAdd",
+		        method: "post",
+		        data : JSON.stringify({add:changes.createdRows,
+		        						modify:changes.updatedRows,
+		        						drop:changes.deletedRows}),
+		        contentType: 'application/json',
+		        beforeSend : function(xhr) {
+		            xhr.setRequestHeader(header, token);
+		        },
+		        success: function(result) {
+		            console.log(result)
+		            if(result=='fail'){
+		            	toastr.error('수정된값이 없습니다.')
+		            }
+		            else{
+		            $('#Sucess-modal h3').text("등록이 완료되었습니다.")
+		           	$('#nextLevel').text('등록완료')
+		        	$('#Sucess-modal').modal('show');
+		            }
+		            },
+		        error: function(error) {
+		            console.error('AJAX 요청 실패:', error);
+		        }
+		    }); 
+		
+    });
+    $('#nextLevel').on('click',function(ev){
+    	$('#Sucess-modal').modal('hide');
+    })
+
+    $('#Sucess-modal').on('hidden.bs.modal', function (e) {
+    	window.location.href = '/admin/subCode';
+    })   
+ 	</script>
+</body>
+</html>

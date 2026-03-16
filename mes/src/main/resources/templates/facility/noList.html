@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+    <!-- https://github.com/nhn/tui.grid/blob/master/packages/toast-ui.grid/examples/example08-date-picker.html -->
+  <style>
+  body {
+	background-color: #e9ecef;
+}
+
+#startpicker-container1, #endpicker-container1, #startpicker-container2,
+	#endpicker-container2 {
+	position: relative;
+	z-index: 9999;
+}
+
+.order-select1 {
+	display: inline;
+	width: 20%;
+	margin-right: 10px;
+}
+
+.order-search1 {
+	display: inline;
+	width: 17%;
+	margin-right: 20px;
+}
+
+.search {
+	width: 45%;
+	padding: 20px;
+	background-color: #f8f9fa;
+	border-radius: 5px;
+	box-shadow: 4px 4px 4px 4px rgba(0, 0, 0, 0.1);
+	margin-bottom: 30px;
+}
+
+.search1 {
+	padding: 20px;
+	background-color: #f8f9fa;
+	border-radius: 5px;
+	box-shadow: 4px 4px 4px 4px rgba(0, 0, 0, 0.1);
+	margin-bottom: 2%;
+}
+
+.search h3 {
+	margin-bottom: 20px;
+}
+
+.data-picker-end {
+	margin-right: 20%
+}
+
+#searchBtn {
+	width: 10%;
+	margin-left: 43%;
+	float: right;
+}
+  </style>
+  </head>
+<body>
+		<h1 class="fw-bold py-1 mb-4 text-muted fw-light">비가동상세조회</h1>
+		<div class="search">
+		<h3 class="fw-bold py-1 mb-4 text-dark fw-light">검색조건</h3>
+		<p class="fw-bold text-dark fw-light"style="display:inline-block; width: 120px;">비가동시작일자</p>
+    <div class="tui-datepicker-input tui-datetime-input tui-has-focus">
+        <input id="startpicker-input1" type="text" aria-label="Date">
+        <span class="tui-ico-date"></span>
+        <div id="startpicker-container1"></div>
+    </div>
+    <span>~</span>
+    <div class="tui-datepicker-input tui-datetime-input tui-has-focus data-picker-end">
+        <input id="endpicker-input1" type="text" aria-label="Date">
+        <span class="tui-ico-date"></span>
+        <div id="endpicker-container1"></div>
+    </div>
+     <p class="fw-bold text-dark fw-light"style="display:inline-block; width: 120px;">비가동종료일자</p>
+    <div class="tui-datepicker-input tui-datetime-input tui-has-focus">
+        <input id="startpicker-input2" type="text" aria-label="Date">
+        <span class="tui-ico-date"></span>
+        <div id="startpicker-container2" style="margin-left: -1px;"></div>
+    </div>
+    <span>~</span>
+    <div class="tui-datepicker-input tui-datetime-input tui-has-focus data-picker-end">
+        <input id="endpicker-input2" type="text" aria-label="Date">
+        <span class="tui-ico-date"></span>
+        <div id="endpicker-container2" style="margin-left: -1px;"></div>
+    </div>
+            <div class="row">
+                         <select class="form-select order-select1"
+							aria-label="Default select example" id=orderSelect1>
+							<option selected value="facName">설비명</option>
+							<option value="facNotReasonName">비가동사유</option>
+							<option value="empName">담당자</option>
+						</select> 
+						<input class="form-control order-search1" type="search"
+							placeholder="검색" aria-label="Search" id="searchOrder1">
+        		<button class="btn btn-outline-primary searchBtn" type="button" id="searchBtn">검색</button>
+      </div>		
+     </div>
+		  <div class="search1">
+		   <button class="btn btn-outline-success float-end" type="button" id="excel">XLSX</button>
+		  <h3 class="fw-bold py-1 mb-4 text-dark fw-light">비가동 조회</h3>
+		   <div class="row orderCallTable">
+			   <div class="col-12">
+				    <div id="grid1"></div>
+			   </div>
+			</div>
+			</div>
+</body>
+<script th:inline="javascript">
+var picker1 = tui.DatePicker.createRangePicker({
+    startpicker: {
+        input: '#startpicker-input1',
+        container: '#startpicker-container1'
+    },
+    endpicker: {
+        input: '#endpicker-input1',
+        container: '#endpicker-container1'
+    },
+    format: 'YYYY-MM-dd',
+});
+
+var picker2 = tui.DatePicker.createRangePicker({
+    startpicker: {
+        input: '#startpicker-input2',
+        container: '#startpicker-container2'
+    },
+    endpicker: {
+        input: '#endpicker-input2',
+        container: '#endpicker-container2'
+    },
+    format: 'YYYY-MM-dd',
+});
+
+const grid1 = new tui.Grid({
+        el: document.getElementById('grid1'),
+        scrollX: false,
+        scrollY: false,
+        pageOptions: {
+            perPage: 5,
+            useClient: true,
+        },
+        columns: [
+            { header: '설비코드', name: 'facCode',align:'center'},
+            { header: '설비명', name: 'facName'},
+            { header: '비가동시작일자', name: 'notStartDate',align:'center'},
+            { header: '비가동종료일자', name: 'notEndDate',align:'center'},
+            { header: '비가동사유', name: 'facNotReasonName',align:'center'},
+            { header: '담당자', name: 'empName',align:'center'},
+            ],
+    });
+    
+function noDetailList(facCode='',facName='',notStartDate1='',
+					  notStartDate2='',notEndDate1='',notEndDate2='',
+					  facNotReasonName='',empName='') {
+		
+	$.ajax({
+	url: "/facility/noDetailListGo",
+	method: "GET",
+	data: {
+			facCode: facCode,
+			facName: facName,
+			notStartDate1: notStartDate1,
+			notStartDate2: notStartDate2,
+			notEndDate1:notEndDate1,
+			notEndDate2:notEndDate2,
+			facNotReasonName:facNotReasonName,
+			empName:empName
+		},
+	success: function(result) {
+	  grid1.resetData(result);
+	},
+	error: function(error) {
+		console.error('AJAX 요청 실패:', error);
+		}
+	});
+}
+$('#searchBtn').on('click', function(){
+    let facCode = '';
+    let facName = '';
+    let facNotReasonName = '';
+    let empName = '';
+    let optionSelect1 = $('#orderSelect1 :selected').val();
+    let notStartDate1 = $('#startpicker-input1').val();
+    let notStartDate2 = $('#endpicker-input1').val();
+    let notEndDate1 = $('#startpicker-input2').val();
+    let notEndDate2 = $('#endpicker-input2').val();
+    if(optionSelect1 == 'facCode'){
+    	facCode = $('#searchOrder1').val();
+    } else if(optionSelect1 == 'facName'){
+    	facName = $('#searchOrder1').val();
+    } else if(optionSelect1 == 'facNotReasonName'){
+    	facNotReasonName = $('#searchOrder1').val();
+    } else if(optionSelect1 == 'empName'){
+    	empName = $('#searchOrder1').val();
+    }
+   
+    noDetailList(facCode,facName,notStartDate1,notStartDate2,notEndDate1,notEndDate2,facNotReasonName,empName);
+});
+//엑셀 다운로드.
+const topOptions = {
+			  includeHiddenColumns: true,
+			  onlySelected: false,
+			  fileName: '주문 정보 조회',
+			};
+$('#excel').on('click',function(){
+	grid1.export('xlsx',topOptions);
+})
+noDetailList();
+</script>
+</html>

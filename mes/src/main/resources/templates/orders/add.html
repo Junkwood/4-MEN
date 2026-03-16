@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<link th:href="@{/css/order.css}" rel="stylesheet">
+    <!-- https://github.com/nhn/tui.grid/blob/master/packages/toast-ui.grid/examples/example08-date-picker.html -->
+  </head>
+<body>
+
+	<div class="container">
+		<h1>주문관리</h1>
+		<div class="order-container" style="float: right;" id='groub-btn'>
+			<button type="button" class="btn btn-outline-dark"
+				id="OrderBtn">주문조회</button>
+			<input type='button' class="btn btn-outline-primary" value="초기화" id="resetBtn">
+			<input type='button' class="btn btn-outline-success" value="새주문서" id="orderRowAdd">
+			<input type='button' class="btn btn-outline-info" value="저장" id="saveBtn">
+			<input type='button' class="btn btn-outline-danger" value="삭제" id="deleteBtn">
+			<input type='button' class="btn btn-outline-warning" value="PDF" id="download-btn">
+		</div>
+		  
+		   <div class="row orderCallTable">
+			   <div class="col-12">
+				    <div id="grid1"></div>
+			   </div>
+			</div>
+			<h1>주문상세등록</h1>
+			<div class="float-end">
+			<input type='button' class="btn btn-outline-success" id="plusBtn" value="╆">
+              <input type='button' class="btn btn-outline-danger" id="minusBtn" value="ㅡ">
+			</div>
+			<div class="row orderCallTable">	  
+				<div class="col-12">
+					 <div id="grid2"></div>
+				</div>
+			</div>
+	</div>
+	<div class="modal fade" id="search-MatOrder-Modal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 class="modal-title fs-4 order-search-title textInline" 
+						id="exampleModalLabel">주문 간단 조회</h3>
+				    <button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="order-search-nav searchGroup">
+
+						<select class="form-select order-select"
+							aria-label="Default select example" id=orderSelect>
+							<option selected value="orderName">주문명</option>
+							<option value="orderCode">주문코드</option>
+							<option value="prodName">제품명</option>
+							<option value="clientName">업체명</option>
+						</select> 
+						<input class="form-control me-2 order-search" type="search"
+							placeholder="Search" aria-label="Search" id="searchOrder">
+						<button class="btn btn-outline-success" type="button" id="searchBtn">검색</button>
+					</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-12">
+							<div id="grid"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+					</div>
+				</div>
+			</div>
+		</div>
+  </div>
+  <div class="modal fade" id="client-Modal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 class="modal-title fs-4 order-search-title textInline" 
+						id="exampleModalLabel">업체 간단 조회</h3>
+				    <button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-12">
+							<div id="grid3"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+					</div>
+				</div>
+			</div>
+		</div>
+  </div>
+  <div class="modal fade" id="Goods-Modal" tabindex="-1"
+		aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h3 class="modal-title fs-4 order-search-title textInline" 
+						id="exampleModalLabel">제품 간단 조회</h3>
+				    <button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="order-search-nav searchGroup">
+						<input class="form-control me-2 order-search" type="search"
+							placeholder="상품명검색" aria-label="Search" id="searchGoods">
+						<button class="btn btn-outline-success" type="button" id="goodsBtn">검색</button>
+					</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-12">
+							<div id="grid4"></div>
+						</div>
+					</div>
+					<div class="modal-footer">
+					</div>
+				</div>
+			</div>
+		</div>
+  </div>
+  <!-- 모달창 -->
+<div class="modal fade" id="Sucess-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">등록 완료</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: center;">
+          <img src="/images/smileImg.png" width="200" alt="Smile Image">
+          <h3 style="margin-top: 20px; font-family: 'Noto Sans KR', sans-serif;">등록이 완료되었습니다.</h3>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-success" id="nextLevel">등록 완료</button>
+      </div>
+    </div>
+  </div>
+</div>
+		
+</body>
+
+<script th:inline="javascript">
+  //세션값 가져와 회원코드 가져오기
+  let empCode =[[${#authentication.principal.empCode}]];
+  //세션값 가져와 이름 가져오기
+   let empName =[[${#authentication.principal.empName}]];
+  //주문코드 자동증가  
+   let auto = [[${auto}]];
+  //주문상세코드 자동증가 
+    let detailAuto = [[${detailAuto}]]
+  //업체명 클릭시 줄 담아오기   
+    let clientRow = '';
+  //상품명 클릭시 줄 담아오기
+  //수정할 시 새주문서 클릭 못하게 막기
+    let updateCount = 0;
+    //grid1 주문코드 클릭시 사용하는 ROW
+    let orderRows = [];
+    //들어가자마자 주문값
+    let orderBasic= [{'orderCode':auto,'orderName':'','registrationDate': getCurrentDate()
+  	                 ,'dueDate':getCurrentDate(),'empCode':empCode,'empName':empName,'clientCode':'','clientName':'','note':''}];
+    //들어가자마자 주문상세값
+    let orderDetailBasic =[{'orderDetailCode': detailAuto,'orderCode':auto, "prodCode": '', "prodName": '', "orderQuantity": 0,'orderPrice':0,'orderTotal':0}];
+    //csrf 토큰 넣을 값 가져오기
+    const token = $("meta[name='_csrf']").attr("content")
+	const header = $("meta[name='_csrf_header']").attr("content");
+	const name = $("#userName").val();
+    //ajax로 보낼 배열 담기
+    let orderDetailAdd = [];
+    orderDetailAdd.push(orderDetailBasic);
+
+    //주문 단건 창
+    const grid1 = new tui.Grid({
+        el: document.getElementById('grid1'),
+        data: orderBasic,
+        scrollX: false,
+        scrollY: false,
+        columns: [
+            { header: '주문코드', name:'orderCode',align:'center'},
+            { header: '주문명', name:'orderName', align:'center',editor: 'text'},
+            { header: '주문일자', name:'registrationDate', align:'center',editor: 'datePicker'},
+            { header: '납기일자',name:'dueDate',align:'center',editor: 'datePicker'},
+            { header: '회원코드',name:'empCode',align:'center'},
+            { header: '담당자',name:'empName',align:'center'},
+            { header: '업체코드',name:'clientCode',align:'center'},
+            { header: '업체명',name:'clientName',align:'center'},
+            { header: '비고',name:'note',align:'center',editor: 'text'}
+        ],
+    });
+    
+    //주문 상세 창
+    const grid2 = new tui.Grid({
+        el: document.getElementById('grid2'),
+        data : orderDetailBasic,
+        scrollX: false,
+        scrollY: false,
+        rowHeaders: ['checkbox'],
+        columns:[
+        	{ header : '주문상세코드' ,name:'orderDetailCode',align:'center'},
+        	{ header : '주문코드' , name:'orderCode',align:'center'},
+            { header: '제품코드',name:'prodCode',align:'center'},
+            { header: '제품명',name:'prodName',align:'center'},
+            { header: '수량',name:'orderQuantity',align:'right',editor:'text',
+            	validation:{
+                    dataType:'number',
+                    min:1,
+                    max:9999999,
+                 },
+                 formatter: function(price){
+               	  return priceFormat(price.value)+'개';
+                 },
+               
+            },
+            { header: '단가', name:'orderPrice', align:'right',editor:'text',
+              validation:{
+                 dataType:'number',
+                 min:1,
+                 max:9999999999,
+              },
+              formatter: function(price){
+            	  return priceFormat(price.value)+'원';
+              },
+              
+            },
+            { header:'총금액', name:'orderTotal', align:'right',
+            	formatter: function(price){
+              	  return priceFormat(price.value)+'원';
+                }
+            },
+        ],
+        
+    });
+  //업체코드 숨기기 
+  grid1.hideColumn("clientCode");
+  grid1.hideColumn("empCode");
+  
+    const grid3 = new tui.Grid({
+        el: document.getElementById('grid3'),
+        scrollX: false,
+        scrollY: false,
+        columns: [
+            { header: '업체코드', name: 'clientCode'},
+            { header: '업체명', name: 'clientName'},
+        ],
+    });
+    
+    const grid4 = new tui.Grid({
+        el: document.getElementById('grid4'),
+        scrollX: false,
+        scrollY: false,
+        pageOptions: {
+            perPage: 5,
+            useClient: true,
+        },
+        columns: [
+            { header: '제품코드', name: 'prodCode'},
+            { header: '제품명', name: 'prodName'},
+            { header: '단위', name: 'unit'},
+        ],
+    });
+   
+    
+    
+ //클릭시 주문조회
+$("#OrderBtn").click(function(){
+	$('#search-MatOrder-Modal').modal('show');
+    ajaxOrderList();
+});
+$('#search-MatOrder-Modal').on('shown.bs.modal', function () {
+	grid.refreshLayout()
+});
+
+// 주문 모달 검색창
+$('#searchBtn').on('click', function(){
+    let orderCode = '';
+    let orderName = '';
+    let clientName = '';
+    let prodName = '';
+    let optionSelect = $('#orderSelect :selected').val();
+    if(optionSelect == 'orderCode'){
+        orderCode = $('#searchOrder').val();
+    } else if(optionSelect == 'orderName'){
+        orderName = $('#searchOrder').val();
+    } else if(optionSelect == 'clientName'){
+        clientName = $('#searchOrder').val();
+    } else if(optionSelect == 'prodName'){
+        prodName = $('#searchOrder').val();
+    }
+    ajaxOrderList(orderCode, orderName, clientName, prodName);
+    $('#searchOrder').val('');
+});
+
+// 엔터 클릭시 검색
+$('#searchOrder').on("keyup", function(key){
+    if(key.keyCode == 13){
+        let orderCode = '';
+        let orderName = '';
+        let clientName = '';
+        let prodName = '';
+        let optionSelect = $('#orderSelect :selected').val();
+        if(optionSelect == 'orderCode'){
+            orderCode = $('#searchOrder').val();
+        } else if(optionSelect == 'orderName'){
+            orderName = $('#searchOrder').val();
+        } else if(optionSelect == 'clientName'){
+            clientName = $('#searchOrder').val();
+        } else if(optionSelect == 'prodName'){
+            prodName = $('#searchOrder').val();
+        }
+        ajaxOrderList(orderCode, orderName, clientName, prodName);
+        $('#searchOrder').val('');
+    }
+});
+// AJAX를 통한 모달 팝업창으로 데이터 전달
+function ajaxOrderList(orderCode, orderName, clientName, prodName) {
+	$.ajax({
+        url: "/simpleOrder",
+        method: "GET",
+        data: {
+            orderCode: orderCode,
+            orderName: orderName,
+            clientName: clientName,
+            prodName: prodName
+        },
+        //추가해야 하는 부분
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+            grid.resetData(result);
+            grid.refreshLayout();
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+
+// AJAX로 받아서 display
+
+    const grid = new tui.Grid({
+        el: document.getElementById('grid'),
+        scrollX: false,
+        scrollY: false,
+        pageOptions: {
+            perPage: 5,
+            useClient: true,
+        },
+        columns: [
+            { header: '주문코드', name: 'orderCode',align:'center',},
+            { header: '주문명', name: 'orderName',width:140},
+            { header: '업체명', name: 'clientName'},
+            { header: '업체코드', name: 'clientCode'},
+            { header: '제품명', name: 'prodName',width:160},
+            { header: '주문일자', name: 'registrationDate',align:'center'},
+            { header: '납기일자', name: 'dueDate',align:'center'},
+            { header: '처리상태', 
+              name: 'status',
+              align:'center',
+              renderer:{
+            	  styles:{
+            		  backgroundColor:(props) => props.value == '등록'?  'rgba(252, 240, 3)' 
+            		  : props.value == '신청중'?  'rgba(252, 3, 45)' 	  
+            		  : props.value == '완료'?  'rgba(3, 252, 65)':'',
+            		fontSize :'15px',
+            	    fontFamily: 'Malgun Gothic',
+            	    fontWeight: 'bold'
+            	  }
+              }
+            	  }
+        ],
+    });
+ 
+// 주문코드갑 가져와서 ajax로 보내기 
+$(document).on('click', '#grid tbody tr', function(event){
+    event.stopPropagation();
+    event.preventDefault();
+    let orderCode = $(this).find('td:first-child').text();
+    let status = $(this).find('td:last-child').text();
+   
+    if(status=='등록'){
+    	ajaxOrderCodeList(orderCode)
+    	ajaxOrderDetailCodeList(orderCode)
+    	toastr.success('정상적으로 값을 전달했습니다.');
+    	updateCount=1;
+    	$('#search-MatOrder-Modal').modal('hide');
+    }else{
+    	toastr.error('신청중이나 완료의 상품은 수정이 불가합니다.');
+    }
+});
+// 주문코드로 ajax통해 주문조회 하기
+function ajaxOrderCodeList(orderCode){
+	$.ajax({
+        url: "/orderCodeList",
+        method: "GET",
+        data: {
+            orderCode: orderCode
+        },
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+        	
+        	for(let obj of result){
+        		if(obj.note == null || obj.note ==''){
+        		 obj.note='';
+        		}
+        	}
+        	grid1.resetData(result);
+        	grid1.refreshLayout();
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+//주문코드로 ajax통해 상세주문조회 하기
+function ajaxOrderDetailCodeList(orderCode){
+	$.ajax({
+        url: "/orderDetailCodeList",
+        method: "GET",
+        data: {
+        	orderCode: orderCode
+        },
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+        	for(let obj of result){
+        		obj.orderTotal = obj.orderQuantity * obj.orderPrice;
+        	}
+        	grid2.resetData(result);
+        	grid2.refreshLayout();
+        	orderDetailAdd=[]
+        	orderDetailAdd.push(result);
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+
+// 수량 단가 변경 시 자동 계산
+
+grid2.on('afterChange', function(ev) {
+    if (ev.changes[0].columnName === 'orderQuantity' || ev.changes[0].columnName === 'orderPrice') {
+        let eventRow = grid2.getRow(ev.changes[0].rowKey);
+        let orderQuantity = eventRow.orderQuantity;
+        let orderPrice = eventRow.orderPrice;
+        let orderTotal = orderQuantity * orderPrice;
+        grid2.setValue(eventRow.rowKey, 'orderTotal', orderTotal, false);
+    }
+});
+
+
+$('#client-Modal').on('shown.bs.modal', function () {
+	 grid3.refreshLayout();
+})
+//업체명 클릭시 업체조회
+grid1.on('click', function(ev){
+   if(ev.columnName === 'clientName' && ev.targetType==='cell'){
+	  $('#client-Modal').modal('show');
+	  clientRow = ev.rowKey
+	   ajaxClientList();
+   }
+});
+//업체 ajax
+function ajaxClientList(){
+	$.ajax({
+        url: "/clientAjax",
+        method: "GET",
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+        	grid3.resetData(result);
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+//업체 해당행을 클릭시 메인창에 전달
+grid3.on('click', function(ev) {
+   if (ev.columnName == 'clientCode' || ev.columnName == 'clientName') {
+       let eventRow = grid3.getValue(ev.rowKey, 'clientName'); // 수정 필요
+       let codeEventRow = grid3.getValue(ev.rowKey, 'clientCode');
+       grid1.setValue(clientRow, 'clientName', eventRow);
+       grid1.setValue(clientRow, 'clientCode', codeEventRow);
+       $('#client-Modal').modal('hide');
+   }
+});
+
+
+$('#Goods-Modal').on('shown.bs.modal', function () {
+	grid4.refreshLayout();
+ });
+//제품명 클릭시 업체조회
+grid2.on('click', function(ev){
+	 if(ev.columnName == 'prodCode' || ev.columnName == 'prodName'){
+		  $('#Goods-Modal').modal('show');
+		  goodsRow = ev.rowKey
+		  ajaxGoodsList();
+	   }
+});
+
+//제품 ajax
+function ajaxGoodsList(prodName=''){
+	$.ajax({
+        url: "/goodsListAjax",
+        method: "GET",
+        data: {
+            prodName : prodName
+        },
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+        	grid4.resetData(result);
+        	grid4.refreshLayout();
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}
+ //제품 검색 클릭
+ $('#goodsBtn').on('click', function(){
+   let prodName = $('#searchGoods').val();
+     ajaxGoodsList(prodName);
+    $('#goodsBtn').val('');
+});
+ //제품 검색 엔터
+ $('#searchGoods').on("keyup", function(key){
+	    if(key.keyCode == 13){
+	    	let prodName = $('#searchGoods').val();
+	    	ajaxGoodsList(prodName);
+	    	$('#goodsBtn').val('');
+	    }
+	});
+//제품 해당행을 클릭시 메인창에 전달
+grid4.on('click', function(ev){
+	
+	if(ev.columnName === 'prodCode'||ev.columnName === 'prodName'||ev.columnName === 'unit'){
+		
+		let prodCodeRow =  grid4.getValue(ev.rowKey,'prodCode');
+		let prodNameRow =  grid4.getValue(ev.rowKey,'prodName');
+		//이미 제품이 들어가있으면 중복되지 않는 validation
+		let gird2Count = grid2.getRowCount();
+		for(i=0;i<gird2Count;i++){
+			let grid2Row = grid2.getRow(i);
+			if(prodNameRow==grid2Row.prodName){
+				toastr.error('이미 해당 제품은 상세품목리스트에 기입되어있습니다.')
+			    return;
+			}
+		}
+		grid2.setValue(goodsRow,'prodCode',prodCodeRow);
+		grid2.setValue(goodsRow,'prodName',prodNameRow);
+		$('#Goods-Modal').modal('hide');   
+	}
+});
+
+//새주문서 클릭 시 주문행 추가 
+$('#orderRowAdd').on('click', function(e) {
+    if(updateCount==1){
+    	toastr.error('수정사항시 새주문서가 발급이 불가합니다.')
+    	return;
+    }
+    let orderCode = $('#grid1 tbody tr:last-child td:first-child').text();
+    let orderCodeSub = orderCode.substr(6);
+    orderCodeSub++;
+    let orderCodes = 'ORDER-' + orderCodeSub;
+    let data = {
+        orderCode: orderCodes,
+        registrationDate: getCurrentDate(),
+        dueDate: getCurrentDate(),
+        empCode : empCode,
+        empName: empName,
+        note:''
+    };
+    grid1.appendRow(data);
+    //주문상세창 띄우기
+	let orderDetailBasicData = [{
+		orderCode: orderCodes,
+		orderQuantity: 0,
+		orderPrice: 0,
+		orderTotal: 0,
+  }];
+	orderDetailAdd.splice(orderDetailAdd.length,0,orderDetailBasicData)
+});
+//grid orderDetail숨기기
+grid.hideColumn('clientCode');
+grid2.hideColumn("orderDetailCode");
+//+버튼 클릭 시 주문상세행 추가
+$('#plusBtn').on('click',function(ev){
+	let orderCode = $('#grid2 tbody tr:last-child td:first-child').text();
+	
+	let orderDetailBasicData = {
+		orderCode: orderCode,
+		orderQuantity: 0,
+		orderPrice: 0,
+		orderTotal: 0,
+   };
+	grid2.appendRow(orderDetailBasicData);
+    
+})
+//-버튼클릭시 주문상세행 제거
+$('#minusBtn').on('click', function(ev){
+    let selectedRows = grid2.getCheckedRows();
+    if(selectedRows.length > 0){
+        for(let i = selectedRows.length - 1; i >= 0; i--){
+            grid2.removeRow(selectedRows[i].rowKey);
+        }
+    } else {
+        toastr.error('선택된 행이 없습니다.');
+    }
+    
+});
+
+//orderCode클릭시 해당하는 상세주문 표현하기 
+grid1.on('click',function(ev){
+	if(ev.columnName=='orderCode' && ev.targetType==='cell'){
+		orderRows.push(ev.rowKey)
+		let beforeClick = orderRows[orderRows.length-2]
+		orderDetailAdd.splice(beforeClick,1,grid2.getData())
+		grid2.resetData(orderDetailAdd[ev.rowKey]);
+	}
+})
+//주문상세내역이 모두 채워졌는지 확인하는 함수
+function isDetailFilled() {
+    let rowCount = grid1.getRowCount();
+    for (let i = 0; i < rowCount; i++) {
+        let row = grid1.getRow(i);
+     // 주문상세내역의 항목이 하나라도 비어있으면 false 반환
+        if (!row.orderCode || !row.orderName || !row.registrationDate 
+        	|| !row.dueDate || !row.empCode || !row.clientName) {
+            return false;
+        }
+    }
+    // 모든 주문상세내역이 채워져있으면 true 반환
+    return true;
+}
+//초기화버튼 누를 시 만들어지는 기능 
+$('#resetBtn').on('click',function(ev){
+	updateCount=0;
+	orderDetailAdd=[];
+	grid1.resetData(orderBasic);
+	grid2.resetData(orderDetailBasic);
+});
+
+
+//등록 및 수정 체크하기 
+$('#saveBtn').on('click',function(ev){
+	 
+	//값이 다채워져있는경우에만 실행
+  
+	let beforeClick = orderRows[orderRows.length-1]
+	orderDetailAdd.splice(beforeClick,1,grid2.getData())
+	let orderCode = $('#grid1 tbody tr:first-child td:first-child').text();
+	//주문코드가 있는지 없는지 확인하기 있으면 수정 없으면 등록!
+	$.ajax({
+        url: "/orderCheck",
+        method: "GET",
+        data: {
+            orderCode: orderCode,            
+        },
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+        	if(result==0){
+        		ajaxOrderAdd();
+        	}else if(result==1){
+        		ajaxOrderUpdate()
+        	}
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+
+    
+})
+//등록 ajax 
+function ajaxOrderAdd(){
+	//등록할때 날짜를 확인하는 반복문
+	let rowCount = grid1.getRowCount();
+	let dateErrorCount = 0;
+	for(let i = 0; i <rowCount; i++){
+		let row = grid1.getRow(i)
+		
+	  if(row.registrationDate > row.dueDate){
+		  toastr.error('등록일자보다 납기일자가 더 빠릅니다.')
+		  return;
+	  }
+	   if(row.clientCode==null||row.clientCode==''){
+		  toastr.error('업체명을 입력하세요')
+		  return;
+	  }
+	   if(row.orderName==null||row.orderName==''){
+			  toastr.error('주문이름을 입력하세요')
+			  return;
+		  }
+	}
+	//모든 배열을 다 푸는 방법 ex)[{},{},[{},{},{}]] -> [{},{},{},{},{},{}]
+	let orderDetail = orderDetailAdd.flat(Infinity);
+  //상품코드가 있는지 확인여부
+	let detailProdCheck = orderDetail.every(function(obj){
+	   if(!obj.prodCode){
+		   obj.prodCode='';
+	   }
+		return obj.prodCode != '';
+	});
+	  console.log(orderDetail)
+  //수량이 0보다 큰지 체크
+	let detailQuantityCheck = orderDetail.every(function(obj){
+		return obj.orderQuantity > 0 && obj.orderQuantity < 9999999; 
+	});
+  //금액이 0보다 큰지 체크
+	let detailPriceCheck = orderDetail.every(function(obj){
+		return obj.orderPrice > 0 && obj.orderPrice < 999999999;  
+	});
+	if(!detailProdCheck){
+		toastr.error('상품을 입력하세요.');
+		return;
+	}
+	if(!detailQuantityCheck){
+		toastr.error('수량을 1개 이상 1000만개이하 입력하셔야합니다.');
+	    return;
+	}
+	if(!detailPriceCheck){
+		toastr.error('금액은 1원 이상 10억개이하 입력하셔야합니다.');
+		return;
+	}
+	$.ajax({
+        url: "/orderAdd",
+        method: "post",
+        data: JSON.stringify({order:grid1.getData(),orderDetail:orderDetail}),
+        contentType: 'application/json',
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+           	$('#Sucess-modal h3').text("등록이 완료되었습니다.")
+           	$('#nextLevel').text('등록완료')
+        	$('#Sucess-modal').modal('show');
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+            toastr.error('등록이 실패하였습니다.')
+        }
+    }); 
+}
+
+//주문수정
+function ajaxOrderUpdate(){
+	
+	let rowCount = grid1.getRowCount();
+	let dateErrorCount = 0;
+	//등록할때 날짜를 확인하는 반복문
+	for(let i = 0; i <rowCount; i++){
+		let row = grid1.getRow(i)
+		
+	  if(row.registrationDate > row.dueDate){
+		  dateErrorCount++
+	  }
+	}
+	if(dateErrorCount != 0 ){
+		toastr.error('날짜를 정확히 기입 후 사용부탁드립니다.');
+	     return;
+	}
+	
+	let orderDetail = orderDetailAdd.flat(Infinity);
+	  //상품코드가 있는지 확인여부
+		let detailProdCheck = orderDetail.every(function(obj){
+			return obj.prodCode != '' 
+		});
+	  //수량이 0보다 큰지 체크
+		let detailQuantityCheck = orderDetail.every(function(obj){
+			return obj.orderQuantity > 0 && obj.orderQuantity < 9999999; 
+		});
+	  //금액이 0보다 큰지 체크
+		let detailPriceCheck = orderDetail.every(function(obj){
+			return obj.orderPrice > 0 && obj.orderPrice < 999999999;  
+		});
+		if(!detailProdCheck){
+			toastr.error('상품을 입력하세요.');
+			return;
+		}
+		if(!detailQuantityCheck){
+			toastr.error('수량을 1개 이상 입력하셔야합니다.');
+		    return;
+		}
+		if(!detailPriceCheck){
+			toastr.error('금액은 1원 이상 10억개이하 입력하셔야합니다.');
+			return;
+		}
+	const changes = grid2.getModifiedRows();
+	$.ajax({
+        url: "/orderUpdate",
+        method: "post",
+        data : JSON.stringify({order:grid1.getData(),
+        	                   orderDetail:changes.createdRows,
+        	                   orderModify:changes.updatedRows,
+        	                   orderDelete:changes.deletedRows}),
+        contentType: 'application/json',
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+            $('#Sucess-modal h3').text("수정이 완료되었습니다.")
+           	$('#nextLevel').text('수정완료')
+        	$('#Sucess-modal').modal('show');
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    }); 
+}
+$('#nextLevel').on('click',function(ev){
+	$('#Sucess-modal').modal('hide');
+})
+
+$('#Sucess-modal').on('hidden.bs.modal', function (e) {
+	window.location.href = '/business/add';
+})   
+//주문삭제
+$('#deleteBtn').on('click',function(ev){
+	if(updateCount==0){
+		toastr.error ('등록 중  삭제는 불가합니다.');
+        return;
+	}
+	
+	let data = $('#grid1 tr td:first-child').text();
+	$.ajax({
+        url: "/order/" + data,
+        method: "delete",
+        beforeSend : function(xhr) {
+            xhr.setRequestHeader(header, token);
+        },
+        success: function(result) {
+            $('#Sucess-modal h3').text("삭제가 완료되었습니다.")
+           	$('#nextLevel').text('삭제완료')
+        	$('#Sucess-modal').modal('show');
+        },
+        error: function(error) {
+            console.error('AJAX 요청 실패:', error);
+        }
+    });
+}); 
+
+//금액 포맷 함수('#,###')
+function priceFormat(price) {
+	if(price == null){
+		return '0';
+	}
+	let result = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+	return result;
+}
+
+// 현재 날짜를 가져오는 함수
+    function getCurrentDate() {
+        const today = new Date();
+        const year = today.getFullYear();
+        let month = today.getMonth() + 1;
+        let day = today.getDate();
+        month = month < 10 ? '0' + month : month;
+        day = day < 10 ? '0' + day : day;
+        return year + '-' + month + '-' + day;
+}
+//pdf 다운로드
+    $('#download-btn').on('click', function(){
+    	if(updateCount==0){
+    		toastr.error ('주문조회 클릭 후 주문서를 뽑을 주문을 선택해주세요');
+            return;
+    	}
+		let code = grid1.getValue(0,'orderCode');
+		location.href=`/order/downloadFile?orderCode=${code}`;
+	
+	});
+//특정행 커서표시
+grid1.on('mouseover',function(ev){
+	if(ev.columnName=='clientName'){
+		  $('.tui-grid-body-container').css("cursor","pointer")
+	}
+})
+grid1.on('mouseout',function(ev){
+	if(ev.columnName=='clientName'){
+		  $('.tui-grid-body-container').css("cursor","")
+	}
+})
+grid2.on('mouseover',function(ev){
+	if(ev.columnName=='prodCode'||ev.columnName=='prodName'){
+		  $('.tui-grid-body-container').css("cursor","pointer")
+	}
+})
+grid2.on('mouseout',function(ev){
+	if(ev.columnName=='prodCode'||ev.columnName=='prodName'){
+		  $('.tui-grid-body-container').css("cursor","")
+	}
+})
+  </script>

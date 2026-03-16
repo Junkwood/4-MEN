@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   <mapper namespace="com.aio.mes.facility.mapper.FacilityMapper">
+   <select id="searchUser">
+       SELECT distinct dept_id
+       FROM emp
+   </select>
+   <select id="searchRank">
+       SELECT distinct rank
+       FROM emp
+   </select>
+   <select id="noOperReason">
+       SELECT  sub_code,
+               sub_code_name
+	   FROM mes_sub_code
+       WHERE main_code='FS'
+   </select>
+   <select id="status">
+       SELECT sub_code,
+          	  sub_code_name
+	   FROM mes_sub_code
+      WHERE main_code='FD'
+   </select>
+   <select id="employeeDisplay" parameterType="FacilityVO">
+        SELECT emp_code,
+      		   emp_name,
+      		   dept_id,
+      		   rank
+	    FROM emp
+	    <where>
+	    <if test="rank != null and !rank.equals('')">
+	          AND rank=#{rank}
+       </if>
+       <if test="deptId != null and !deptId.equals('')">
+             AND dept_id=#{deptId}
+       </if>
+		</where>
+   </select>
+   <select id="facilityDisplay" parameterType="FacilityVO">
+      SELECT fac_code,
+       fac_name,
+       fac_class_code, 
+       fac_status,
+       not_start_date,
+       not_end_date,
+       fac_not_reason_code,
+       emp_code,
+       fac_not_code,
+       FIND_EMP_NAME(emp_code) emp_name,
+       get_mes_sub_code_name(fac_status) fac_status_name,
+       get_mes_sub_code_name(fac_class_code) fac_class_name,
+       get_mes_sub_code_name(fac_not_reason_code) fac_not_reason_name
+	FROM (
+    SELECT f.fac_code,
+           f.fac_name,
+           f.fac_class_code,
+           f.fac_status,
+           n.fac_not_code,
+           n.not_start_date,
+           n.not_end_date,
+           n.emp_code,
+           n.fac_not_reason_code,
+           ROW_NUMBER() OVER (PARTITION BY f.fac_code ORDER BY  TO_NUMBER(substr(fac_not_code,7)) DESC) rn
+    FROM fac f
+    	LEFT JOIN fac_not n ON f.fac_code = n.fac_code
+	) sub
+	WHERE rn = 1
+	<if test="facStatus != null and !facStatus.equals('')">
+	          AND fac_status=#{facStatus}
+    </if>
+     <if test="facClassCode != null and !facClassCode.equals('')">
+             AND fac_class_code=#{facClassCode}
+     </if>
+     ORDER BY TO_NUMBER(substr(fac_code,4)) DESC
+   </select>
+   <select id="noReasonList">
+      SELECT sub_code,
+       		 sub_code_name
+		FROM mes_sub_code
+		WHERE main_code='NF'
+		AND sub_code!='NF2'
+    </select>
+    <insert id="noStart" parameterType="FacilityVO">
+   
+        INSERT INTO fac_not (fac_not_code,
+                        fac_code,
+                        emp_code,
+                        not_start_date,
+                        not_end_date,
+                        fac_not_reason_code
+                        )
+		VALUES (AUTO_FACNOT_CODE(),
+		        #{facCode},
+		        #{empCode},
+		        sysdate,
+		        null,
+		        #{facNotReasonCode})
+    </insert>
+    <update id="statusUpdate" parameterType="FacilityVO">
+        UPDATE fac
+		SET fac_status='FS3'
+		WHERE fac_code= #{facCode}
+    </update>
+    <update id="noEnd" parameterType="FacilityVO">
+       UPDATE fac_not 
+		SET not_end_date =sysdate
+		WHERE fac_not_code=#{facNotCode}
+    </update>
+    <update id="endStatus" parameterType="FacilityVO">
+       UPDATE fac SET 
+       fac_status='FS1'
+        WHERE fac_code= #{facCode}
+    </update>
+    
+    <select id="noReasonDetailList" parameterType="facilityVO">
+         SELECT fac_code,
+      		    find_fac_name(fac_code) fac_name,
+      		    find_emp_name(emp_code) emp_name,
+       			not_start_date,
+      		    not_end_date,
+      		    get_mes_sub_code_name(fac_not_reason_code) fac_not_reason_name
+	   FROM fac_not
+	   <where>
+     <if test="facCode != null and !facCode.equals('')">
+            AND fac_code LIKE '%'||#{facCode}||'%'
+    </if>
+     <if test="facName != null and !facName.equals('')">
+            AND find_fac_name(fac_code) LIKE '%'||#{facName}||'%'
+    </if>
+     <if test="empName != null and !empName.equals('')">
+            AND find_emp_name(emp_code) LIKE '%'||#{empName}||'%'
+    </if>
+     <if test="facNotReasonName != null and !facNotReasonName.equals('')">
+            AND get_mes_sub_code_name(fac_not_reason_code) LIKE '%'||#{facNotReasonName}||'%'
+    </if>
+    <if test="notStartDate2 != null and !notStartDate2.equals('')">
+             AND not_start_date BETWEEN TO_DATE(#{notStartDate1}, 'YYYY-MM-DD')
+                			      AND TO_DATE(#{notStartDate2}, 'YYYY-MM-DD')
+     </if>
+     <if test="notEndDate2 != null and !notEndDate2.equals('')">
+             AND not_end_date BETWEEN TO_DATE(#{notEndDate1}, 'YYYY-MM-DD')
+                			      AND TO_DATE(#{notEndDate2}, 'YYYY-MM-DD')
+     </if>
+     </where>
+    </select>
+   </mapper>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="com.aio.mes.manager.mapper.ProcMapper">
+  
+  <select id="procList" resultType="ProcVO">
+		SELECT p.proc_code,
+		p.proc_name,
+		p.note,
+		f.fac_class_code,
+		p.proc_class_code,
+		e.ent_member_code
+
+		FROM proc p JOIN ent_member e
+		ON p.ent_member_code =
+		e.ent_member_code
+		JOIN fac f
+		ON p.fac_class_code = f.fac_class_code
+	</select>
+  
+  
+  <select id="procGetSearchList" parameterType="ProcVO"
+		resultType="ProcVO">
+		SELECT DISTINCT p.proc_code,
+		p.proc_name,
+		p.note,
+		f.fac_class_code,
+		p.proc_class_code
+
+		FROM proc p 
+		JOIN fac f
+		ON p.fac_class_code =
+		f.fac_class_code
+		<where>
+			<choose>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('facClassCode')">
+					AND fac_class_code LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('procClassCode')">
+					AND proc_class_code LIKE '%' || #{managerVO.keyword} || '%'
+				</when>
+				<when
+					test="managerVO.type != null and managerVO.type.equals('procName')">
+					AND UPPER(proc_name) LIKE '%' || UPPER(#{managerVO.keyword}) || '%'
+				</when>
+			</choose>
+		</where>
+	</select>
+  
+  </mapper>
